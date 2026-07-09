@@ -1,8 +1,9 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-serif: 'Noto Serif SC', 'ZCOOL XiaoWei', serif;
-  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-script: 'Great Vibes', 'Segoe Script', cursive;
 }
 
 * {
@@ -18,12 +19,18 @@ body,
 
 body {
   font-family: var(--font-sans);
+  background: #0a0a0a;
+  color: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .font-serif {
   font-family: var(--font-serif);
+}
+
+.font-script {
+  font-family: var(--font-script);
 }
 
 .scrollbar-hide {
@@ -36,10 +43,165 @@ body {
 }
 
 ::selection {
-  background-color: rgb(251 113 133 / 0.3);
+  background-color: rgb(255 255 255 / 0.15);
 }
 
 input[type='date']::-webkit-calendar-picker-indicator {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: pointer;
+  filter: invert(1);
+}
+
+.page-shell {
+  width: 100%;
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+}
+
+html {
+  scrollbar-color: rgb(255 255 255 / 0.12) #0a0a0a;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.12);
+  border-radius: 999px;
+}
+
+.scroll-float-char {
+  height: 1.15em;
+}
+
+.scroll-paper {
+  background: rgb(10 10 10 / 0.72);
+  backdrop-filter: blur(12px);
+}
+
+/* Hero 星空 */
+.hero-stars {
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 55% 15%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 70% 45%, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 15% 80%, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 45% 90%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 90% 70%, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 60% 55%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(2px 2px at 75% 10%, rgba(255, 255, 255, 0.7), transparent);
+  background-color: #0c0c14;
+}
+
+/* Hero 山峦剪影 */
+.hero-mountains {
+  background:
+    linear-gradient(to top, #0a0a0a 0%, transparent 100%),
+    linear-gradient(135deg, transparent 40%, #0d0d12 40%, #0d0d12 55%, transparent 55%),
+    linear-gradient(225deg, transparent 30%, #111118 30%, #111118 50%, transparent 50%),
+    linear-gradient(160deg, transparent 50%, #0a0a10 50%, #0a0a10 70%, transparent 70%),
+    linear-gradient(200deg, transparent 45%, #131320 45%, #131320 65%, transparent 65%);
+  background-size: 100% 100%;
+  opacity: 0.9;
+}
+
+/* 登录卡片 */
+.login-card {
+  background: linear-gradient(
+    145deg,
+    rgb(217 70 239 / 0.35),
+    rgb(139 92 246 / 0.15) 40%,
+    rgb(255 255 255 / 0.08) 70%,
+    rgb(192 132 252 / 0.2)
+  );
+  box-shadow:
+    0 24px 80px rgb(0 0 0 / 0.45),
+    0 0 0 1px rgb(255 255 255 / 0.04) inset;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.login-input-wrap--focused {
+  border-color: rgb(217 70 239 / 0.45);
+  background: rgb(255 255 255 / 0.06);
+  box-shadow:
+    0 0 0 3px rgb(192 132 252 / 0.12),
+    0 8px 24px rgb(0 0 0 / 0.2);
+}
+
+.login-input-icon {
+  margin-left: 0.95rem;
+  flex-shrink: 0;
+  color: rgb(255 255 255 / 0.28);
+  transition: color 0.25s ease;
+}
+
+.login-input-wrap--focused .login-input-icon {
+  color: rgb(244 114 182 / 0.85);
+}
+
+.login-input {
+  width: 100%;
+  background: transparent;
+  padding: 0.9rem 1rem 0.9rem 0.75rem;
+  color: #fff;
+  outline: none;
+}
+
+.login-input::placeholder {
+  color: rgb(255 255 255 / 0.22);
+}
+
+.login-submit-btn {
+  background: linear-gradient(135deg, #e879f9 0%, #a855f7 45%, #7c3aed 100%);
+  box-shadow:
+    0 10px 30px rgb(168 85 247 / 0.35),
+    0 0 0 1px rgb(255 255 255 / 0.12) inset;
+  transition:
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
+}
+
+.login-submit-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+}
+
+.login-submit-btn:hover:not(:disabled)::before {
+  transform: translateX(120%);
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  box-shadow:
+    0 14px 36px rgb(168 85 247 / 0.45),
+    0 0 0 1px rgb(255 255 255 / 0.18) inset;
+  filter: brightness(1.05);
 }

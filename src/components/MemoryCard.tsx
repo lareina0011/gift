@@ -17,16 +17,16 @@ export function MemoryCard({ memory, onDelete }: MemoryCardProps) {
   return (
     <>
       <SpotlightCard
-        className="group rounded-2xl border border-white/60 bg-white/75 shadow-sm backdrop-blur-sm transition hover:shadow-md"
-        spotlightColor="rgba(244, 114, 182, 0.15)"
+        className="group rounded-xl border border-white/[0.06] bg-[#141414] transition hover:border-white/10"
+        spotlightColor="rgba(255,255,255,0.04)"
       >
         <motion.article layout className="p-5">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-serif text-lg font-semibold text-stone-800">
+              <h3 className="font-serif text-lg font-semibold text-white/90">
                 {memory.title}
               </h3>
-              <p className="mt-1 flex items-center gap-1 text-xs text-stone-400">
+              <p className="mt-1 flex items-center gap-1 text-xs text-white/30">
                 <Calendar className="h-3 w-3" />
                 {memory.date}
               </p>
@@ -40,10 +40,10 @@ export function MemoryCard({ memory, onDelete }: MemoryCardProps) {
                   setTimeout(() => setConfirmDelete(false), 3000)
                 }
               }}
-              className={`rounded-lg p-1.5 transition ${
+              className={`rounded-sm p-1.5 transition ${
                 confirmDelete
-                  ? 'bg-rose-100 text-rose-600'
-                  : 'text-stone-300 opacity-0 hover:bg-stone-100 hover:text-stone-500 group-hover:opacity-100'
+                  ? 'bg-red-500/20 text-red-400'
+                  : 'text-white/15 opacity-0 hover:bg-white/5 hover:text-white/50 group-hover:opacity-100'
               }`}
               title={confirmDelete ? '再次点击确认删除' : '删除'}
             >
@@ -52,7 +52,7 @@ export function MemoryCard({ memory, onDelete }: MemoryCardProps) {
           </div>
 
           {memory.content && (
-            <p className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-stone-600">
+            <p className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-white/50">
               {memory.content}
             </p>
           )}
@@ -70,7 +70,7 @@ export function MemoryCard({ memory, onDelete }: MemoryCardProps) {
           )}
 
           {memory.media.length > 0 && (
-            <div className="mt-3 flex gap-3 text-xs text-stone-400">
+            <div className="mt-3 flex gap-3 text-xs text-white/25">
               {memory.media.some((m) => m.type === 'image') && (
                 <span className="flex items-center gap-1">
                   <Image className="h-3 w-3" />

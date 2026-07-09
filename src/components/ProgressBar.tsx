@@ -81,18 +81,18 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
   const highlightIndex = isDragging ? dragIndex : activeIndex
 
   return (
-    <div className="border-t border-white/40 bg-white/70 px-4 py-4 backdrop-blur-md sm:px-8">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-3 flex items-center justify-between text-xs text-stone-500">
-          <span>{APP_CONFIG.progressLabel}</span>
-          <span className="font-semibold text-stone-700">
+    <div className="border-t border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-md">
+      <div className="page-shell py-4">
+        <div className="mb-3 flex items-center justify-between text-xs text-white/35">
+          <span className="tracking-wider">{APP_CONFIG.progressLabel}</span>
+          <span className="font-semibold text-white/70">
             {isDragging ? (
               <>{Math.round(displayProgress)}%</>
             ) : (
               <CountUp key={activeStage} to={stageProgress} suffix="%" duration={0.6} />
             )}
             {isDragging && (
-              <span className="ml-1.5 text-violet-500">
+              <span className="ml-1.5 text-white/50">
                 · {STAGES[dragIndex]?.shortLabel}
               </span>
             )}
@@ -114,9 +114,9 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
             startDrag(e.clientX)
           }}
         >
-          <div className="absolute top-1/2 h-2.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-stone-200/80">
+          <div className="absolute top-1/2 h-px w-full -translate-y-1/2 overflow-hidden bg-white/10">
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-violet-400 to-fuchsia-400"
+              className="absolute inset-y-0 left-0 bg-white/50"
               style={{
                 width: `${displayProgress}%`,
                 transition: isDragging ? 'none' : 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -130,14 +130,14 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
               className="pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${stage.progress}%` }}
             >
-              <div className="rounded-full bg-white p-0.5 shadow-sm">
-                <AppIcon config={getStageIcon(stage.id)} size={14} className="text-violet-400" />
+              <div className="rounded-full bg-[#0a0a0a] p-0.5 ring-1 ring-white/20">
+                <AppIcon config={getStageIcon(stage.id)} size={12} className="text-white/60" />
               </div>
             </div>
           ))}
 
           <div
-            className={`pointer-events-none absolute top-1/2 z-20 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-gradient-to-br from-violet-400 to-rose-400 shadow-lg ${
+            className={`pointer-events-none absolute top-1/2 z-20 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-white shadow-[0_0_12px_rgba(255,255,255,0.3)] ${
               isDragging ? 'scale-125' : ''
             }`}
             style={{
@@ -165,16 +165,16 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
                   <AppIcon
                     config={getStageIcon(stage.id)}
                     size={active ? 20 : 16}
-                    className={active ? 'text-violet-600' : 'text-stone-400'}
+                    className={active ? 'text-white' : 'text-white/30'}
                   />
                 </motion.div>
                 <span
                   className={`truncate text-[10px] ${
                     active
-                      ? 'font-semibold text-violet-700'
+                      ? 'font-semibold text-white/80'
                       : reached
-                        ? 'text-stone-500'
-                        : 'text-stone-300'
+                        ? 'text-white/40'
+                        : 'text-white/15'
                   }`}
                 >
                   {stage.shortLabel}

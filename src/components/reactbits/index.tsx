@@ -136,6 +136,46 @@ export function CountUp({ to, className = '', duration = 0.8, suffix = '' }: Cou
   )
 }
 
+interface ScrollRevealProps {
+  children: ReactNode
+  className?: string
+  delay?: number
+  y?: number
+  /** 0–1，元素进入视口多少比例时触发 */
+  amount?: number
+}
+
+export function ScrollReveal({
+  children,
+  className = '',
+  delay = 0,
+  y = 56,
+  amount = 0.12,
+}: ScrollRevealProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, {
+    once: true,
+    amount,
+    margin: '0px 0px -8% 0px',
+  })
+
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      initial={{ opacity: 0, y, filter: 'blur(10px)' }}
+      animate={
+        inView
+          ? { opacity: 1, y: 0, filter: 'blur(0px)' }
+          : { opacity: 0, y, filter: 'blur(10px)' }
+      }
+      transition={{ duration: 1.1, delay, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
 interface FadeInProps {
   children: ReactNode
   className?: string
@@ -198,3 +238,6 @@ export function SpotlightCard({
     </div>
   )
 }
+
+export { ScrollFloat } from './ScrollFloat'
+export { OrbitImages } from './OrbitImages'

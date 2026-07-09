@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, type RefObject } from 'react'
 import { Mesh, Program, Renderer, Triangle } from 'ogl'
 
 interface PlasmaProps {
@@ -9,6 +9,8 @@ interface PlasmaProps {
   opacity?: number
   mouseInteractive?: boolean
   className?: string
+  maxDpr?: number
+  pauseRef?: RefObject<boolean>
 }
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -101,6 +103,8 @@ export const Plasma = memo(function Plasma({
   opacity = 1,
   mouseInteractive = true,
   className = '',
+  maxDpr,
+  pauseRef,
 }: PlasmaProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mousePos = useRef({ x: 0, y: 0 })
@@ -119,7 +123,7 @@ export const Plasma = memo(function Plasma({
         webgl: 2,
         alpha: true,
         antialias: false,
-        dpr: Math.min(window.devicePixelRatio || 1, 2),
+        dpr: Math.min(window.devicePixelRatio || 1, maxDpr ?? 2),
       })
     } catch {
       return
@@ -188,7 +192,10 @@ export const Plasma = memo(function Plasma({
     const t0 = performance.now()
 
     const loop = (t: number) => {
+      raf = requestAnimationFrame(loop)
       if (contextLost || !isVisible) return
+      if (pauseRef?.current) return
+
       const timeValue = (t - t0) * 0.001
       if (direction === 'pingpong') {
         const pingpongDuration = 10
@@ -205,7 +212,6 @@ export const Plasma = memo(function Plasma({
         ;(program.uniforms.iTime as { value: number }).value = timeValue
       }
       renderer.render({ scene: mesh })
-      raf = requestAnimationFrame(loop)
     }
 
     const handleContextLost = (e: Event) => {
@@ -253,7 +259,7 @@ export const Plasma = memo(function Plasma({
         /* already removed */
       }
     }
-  }, [color, speed, direction, scale, opacity, mouseInteractive])
+  }, [color, speed, direction, scale, opacity, mouseInteractive, maxDpr, pauseRef])
 
   return <div ref={containerRef} className={`h-full w-full ${className}`} />
 })

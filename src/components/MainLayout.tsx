@@ -1,16 +1,24 @@
 import { LogOut, User } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { APP_CONFIG } from '../constants/config'
 import { STAGES } from '../constants/stages'
+import { useBackgroundImages } from '../hooks/useBackgroundImages'
+import { useIntroMedia } from '../hooks/useIntroMedia'
 import { useMemories } from '../hooks/useMemories'
+import { hasPlayedIntroThisSession } from '../utils/introMedia'
 import { hasSeenWelcome, markWelcomeSeen } from '../utils/storage'
 import type { StageId } from '../types'
-import { Particles } from './Particles'
+import { DesignCredit } from './DesignCredit'
+import { HeroCover } from './HeroCover'
+import { LoginIntroOverlay } from './LoginIntroOverlay'
+import { MemoryOrbitGallery } from './MemoryOrbitGallery'
 import { ProfilePanel } from './ProfilePanel'
 import { ProgressBar } from './ProgressBar'
-import { BlurText } from './reactbits'
+import { StageBento } from './StageBento'
+import { ScrollUnrollSection } from './ScrollUnrollSection'
 import { StageContent } from './StageContent'
 import { StageTabs } from './StageTabs'
+import { StageTransition } from './StageTransition'
 import { WelcomeOverlay } from './WelcomeOverlay'
 
 interface MainLayoutProps {
@@ -28,10 +36,15 @@ export function MainLayout({
   onChangePassword,
 }: MainLayoutProps) {
   const [activeStage, setActiveStage] = useState<StageId>('primary')
+  const [transitionTarget, setTransitionTarget] = useState<StageId | null>(null)
   const [showProfile, setShowProfile] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [showIntro, setShowIntro] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLElement>(null)
   const {
     ready,
+    memories,
     wishes,
     addMemory,
     deleteMemory,
@@ -41,11 +54,38 @@ export function MainLayout({
     getMemoryCount,
   } = useMemories()
 
+  const {
+    loginBgUrl,
+    heroCoverUrl,
+    hasCustomLogin,
+    hasCustomHero,
+    defaultHeroUrl,
+    defaultLoginUrl,
+    uploadBackground,
+    removeBackground,
+  } = useBackgroundImages()
+
+  const {
+    ready: introReady,
+    introImageUrl,
+    introAudioUrl,
+    hasIntroImage,
+    hasIntroAudio,
+    hasIntroMedia,
+    uploadIntroMedia,
+    removeIntroMedia,
+  } = useIntroMedia()
+
   useEffect(() => {
+    if (!ready || !introReady) return
+    if (hasIntroMedia && !hasPlayedIntroThisSession()) {
+      setShowIntro(true)
+      return
+    }
     if (!hasSeenWelcome()) {
       setShowWelcome(true)
     }
-  }, [])
+  }, [ready, introReady, hasIntroMedia])
 
   const memoryCounts = useMemo(() => {
     const counts = {} as Record<StageId, number>
@@ -57,9 +97,29 @@ export function MainLayout({
 
   const stageMemories = getMemoriesByStage(activeStage)
 
-  const handleStageChange = (id: StageId) => {
-    setActiveStage(id)
-    setShowProfile(false)
+  const handleTransitionComplete = useCallback(() => {
+    if (transitionTarget) {
+      setActiveStage(transitionTarget)
+      setTransitionTarget(null)
+    }
+  }, [transitionTarget])
+
+  const handleStageChange = useCallback(
+    (id: StageId, skipTransition = false) => {
+      if (id === activeStage && !transitionTarget) return
+      setShowProfile(false)
+      if (skipTransition || transitionTarget) {
+        setTransitionTarget(null)
+        setActiveStage(id)
+        return
+      }
+      setTransitionTarget(id)
+    },
+    [activeStage, transitionTarget],
+  )
+
+  const scrollToContent = () => {
+    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const handleWelcomeClose = () => {
@@ -67,93 +127,137 @@ export function MainLayout({
     setShowWelcome(false)
   }
 
-  if (!ready) {
+  if (!ready || !introReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 to-violet-100">
-        <div className="text-center">
-          <div className="mb-3 text-4xl animate-pulse">🎓</div>
-          <p className="text-stone-500">加载中...</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+        <p className="text-sm tracking-widest text-white/40">加载中...</p>
       </div>
     )
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden">
-      {/* React Bits 风格粒子背景 */}
-      <div className="pointer-events-none absolute inset-0 opacity-40">
-        <Particles
-          particleCount={80}
-          speed={0.06}
-          particleColors={['#e9d5ff', '#fbcfe8', '#ddd6fe', '#fde68a']}
-        />
-      </div>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-50/90 via-amber-50/70 to-violet-100/90" />
+    <div className="relative min-h-screen text-white">
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroCoverUrl ?? defaultHeroUrl})` }}
+      />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[#0a0a0a]/40" />
 
-      <header className="relative sticky top-0 z-40 border-b border-white/40 bg-white/70 px-4 py-3 backdrop-blur-md sm:px-8">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <BlurText
-            text={APP_CONFIG.siteTitle}
-            className="font-serif text-lg font-bold text-stone-800 sm:text-xl"
-            animateBy="letters"
-            delay={50}
-          />
-          <div className="flex items-center gap-1">
+      <header className="fixed left-0 right-0 top-0 z-50">
+        <div className="page-shell flex items-center justify-between py-5">
+          <span className="font-serif text-sm font-semibold tracking-wide text-white/90 sm:text-base">
+            {APP_CONFIG.siteTitle}
+          </span>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowProfile(true)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition ${
+              className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs tracking-wider transition ${
                 showProfile
-                  ? 'bg-violet-100 text-violet-700'
-                  : 'text-stone-500 hover:bg-white/80 hover:text-stone-700'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/50 hover:text-white'
               }`}
             >
-              <User className="h-4 w-4" />
-              <span>我的</span>
+              <User className="h-3.5 w-3.5" />
+              我的
             </button>
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-stone-400 transition hover:bg-white/80 hover:text-stone-600"
+              className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs tracking-wider text-white/40 transition hover:text-white/70"
             >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">退出</span>
+              <LogOut className="h-3.5 w-3.5" />
+              退出
             </button>
           </div>
         </div>
-
-        {!showProfile && (
-          <div className="mx-auto mt-3 max-w-5xl">
-            <StageTabs
-              activeStage={activeStage}
-              onChange={handleStageChange}
-              memoryCounts={memoryCounts}
-            />
-          </div>
-        )}
       </header>
 
-      <div className="relative flex flex-1 flex-col">
-        {showProfile ? (
-          <ProfilePanel username={currentUser} onChangePassword={onChangePassword} />
-        ) : (
-          <StageContent
-            stageId={activeStage}
-            memories={stageMemories}
-            wishes={wishes}
-            onAddMemory={async (data) => {
-              await addMemory(activeStage, data)
-            }}
-            onDeleteMemory={deleteMemory}
-            onAddWish={addWish}
-            onDeleteWish={deleteWish}
-          />
-        )}
+      <StageTransition
+        targetStage={transitionTarget}
+        fromStage={activeStage}
+        onComplete={handleTransitionComplete}
+      />
 
-        {!showProfile && (
-          <ProgressBar activeStage={activeStage} onStageChange={handleStageChange} />
-        )}
-      </div>
+      {showProfile ? (
+        <div className="pt-20">
+          <ProfilePanel
+            username={currentUser}
+            onChangePassword={onChangePassword}
+            loginPreviewUrl={loginBgUrl ?? defaultLoginUrl}
+            heroPreviewUrl={heroCoverUrl ?? defaultHeroUrl}
+            hasCustomLogin={hasCustomLogin}
+            hasCustomHero={hasCustomHero}
+            uploadBackground={uploadBackground}
+            removeBackground={removeBackground}
+            introImagePreviewUrl={introImageUrl}
+            introAudioPreviewUrl={introAudioUrl}
+            hasIntroImage={hasIntroImage}
+            hasIntroAudio={hasIntroAudio}
+            uploadIntroMedia={uploadIntroMedia}
+            removeIntroMedia={removeIntroMedia}
+          />
+        </div>
+      ) : (
+        <>
+          <HeroCover
+            ref={heroRef}
+            onExplore={scrollToContent}
+            onFuture={() => {
+              handleStageChange('future')
+              setTimeout(scrollToContent, 100)
+            }}
+          />
+
+          <ScrollUnrollSection triggerRef={heroRef}>
+            <StageBento
+              activeStage={activeStage}
+              memoryCounts={memoryCounts}
+              onStageChange={(id) => {
+                handleStageChange(id)
+                scrollToContent()
+              }}
+            />
+
+            <div ref={contentRef} className="border-t border-white/[0.06]">
+            <div className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0a0a0a]/90 py-3 backdrop-blur-md">
+              <div className="page-shell">
+                <StageTabs
+                  activeStage={activeStage}
+                  onChange={handleStageChange}
+                  memoryCounts={memoryCounts}
+                />
+              </div>
+            </div>
+
+            <StageContent
+              stageId={activeStage}
+              memories={stageMemories}
+              wishes={wishes}
+              onAddMemory={async (data) => {
+                await addMemory(activeStage, data)
+              }}
+              onDeleteMemory={deleteMemory}
+              onAddWish={addWish}
+              onDeleteWish={deleteWish}
+            />
+
+            <MemoryOrbitGallery memories={memories} />
+
+            <ProgressBar activeStage={activeStage} onStageChange={handleStageChange} />
+            </div>
+          </ScrollUnrollSection>
+        </>
+      )}
+
+      <LoginIntroOverlay
+        open={showIntro}
+        imageUrl={introImageUrl}
+        audioUrl={introAudioUrl}
+        onComplete={() => setShowIntro(false)}
+      />
 
       <WelcomeOverlay open={showWelcome} onClose={handleWelcomeClose} />
+
+      <DesignCredit />
     </div>
   )
 }
