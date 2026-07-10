@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { memo, useRef, useState } from 'react'
-import { Eye, EyeOff, Lock, Sparkles, User } from 'lucide-react'
+import { Eye, EyeOff, Lock, User } from 'lucide-react'
 import { APP_CONFIG } from '../constants/config'
 
 interface LoginFormProps {
@@ -60,10 +60,9 @@ export const LoginForm = memo(function LoginForm({
       animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
       className="relative z-10 w-full max-w-[400px] px-4"
-      style={{ contain: 'layout style paint', transform: 'translateZ(0)' }}
     >
       <div className="login-card relative overflow-hidden rounded-[1.35rem] p-px">
-        <div className="relative rounded-[1.3rem] bg-[#0c0a12]/75 px-7 py-8 backdrop-blur-2xl sm:px-9 sm:py-9">
+        <div className="relative rounded-[1.3rem] bg-[#0c0a12]/42 px-7 py-8 backdrop-blur-xl sm:px-9 sm:py-9">
           <div
             className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-fuchsia-500/15 blur-3xl"
             aria-hidden
@@ -74,37 +73,27 @@ export const LoginForm = memo(function LoginForm({
           />
 
           <header className="relative mb-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.5 }}
-              className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] tracking-[0.28em] text-white/45"
-            >
-              <Sparkles className="h-3 w-3 text-fuchsia-300/70" />
-              WELCOME
-            </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.22, duration: 0.55 }}
-              className="font-serif text-3xl font-bold tracking-wide text-white sm:text-[2rem]"
+              transition={{ delay: 0.18, duration: 0.55 }}
+              className="login-brand"
             >
               {APP_CONFIG.siteTitle}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="mt-2 text-sm text-white/40"
+              transition={{ delay: 0.28, duration: 0.5 }}
+              className="login-tagline"
             >
               {APP_CONFIG.loginSubtitle}
             </motion.p>
-            <div className="mx-auto mt-5 h-px w-16 bg-gradient-to-r from-transparent via-fuchsia-400/50 to-transparent" />
           </header>
 
           <form onSubmit={handleSubmit} className="relative space-y-5">
             <div>
-              <label className="mb-2 block text-[11px] font-medium tracking-[0.18em] text-white/35">
+              <label className="login-field-label">
                 账号
               </label>
               <div
@@ -127,7 +116,7 @@ export const LoginForm = memo(function LoginForm({
             </div>
 
             <div>
-              <label className="mb-2 block text-[11px] font-medium tracking-[0.18em] text-white/35">
+              <label className="login-field-label">
                 密码
               </label>
               <div
@@ -176,9 +165,9 @@ export const LoginForm = memo(function LoginForm({
               disabled={loading}
               whileHover={{ scale: loading ? 1 : 1.01, y: loading ? 0 : -1 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="login-submit-btn relative mt-1 flex w-full items-center justify-center overflow-hidden rounded-xl py-3.5 text-sm font-semibold tracking-[0.12em] text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="login-submit-btn relative mt-1 flex w-full items-center justify-center overflow-hidden rounded-xl py-3.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <span className="relative z-10">{loading ? '登录中...' : '登 录'}</span>
+              <span className="relative z-10">{loading ? '登录中…' : '登录'}</span>
             </motion.button>
           </form>
         </div>

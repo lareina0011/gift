@@ -24,14 +24,14 @@ export function StageBento({
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-medium tracking-[0.3em] text-white/35">
-            CURRICULUM HIGHLIGHTS
+            TIME ALBUM
           </p>
           <ScrollFloat
             scrollStart="top 90%"
             scrollEnd="top 58%"
             className="mt-2 font-serif text-2xl font-bold text-white sm:text-3xl"
           >
-            求学阶段一览
+            时光专辑
           </ScrollFloat>
         </div>
         <span className="shrink-0 text-xs text-white/30">{totalMemories} 条回忆</span>

@@ -5,8 +5,14 @@ import { STAGES } from '../constants/stages'
 import { useBackgroundImages } from '../hooks/useBackgroundImages'
 import { useIntroMedia } from '../hooks/useIntroMedia'
 import { useMemories } from '../hooks/useMemories'
+import { useProfileAvatar } from '../hooks/useProfileAvatar'
 import { hasPlayedIntroThisSession } from '../utils/introMedia'
-import { hasSeenWelcome, markWelcomeSeen } from '../utils/storage'
+import {
+  hasSeenWelcome,
+  hasWelcomeUserThisSession,
+  markWelcomeSeen,
+  markWelcomeUserThisSession,
+} from '../utils/storage'
 import type { StageId } from '../types'
 import { DesignCredit } from './DesignCredit'
 import { HeroCover } from './HeroCover'
@@ -20,6 +26,7 @@ import { StageContent } from './StageContent'
 import { StageTabs } from './StageTabs'
 import { StageTransition } from './StageTransition'
 import { WelcomeOverlay } from './WelcomeOverlay'
+import { WelcomeUserOverlay } from './WelcomeUserOverlay'
 
 interface MainLayoutProps {
   currentUser: string
@@ -39,6 +46,7 @@ export function MainLayout({
   const [transitionTarget, setTransitionTarget] = useState<StageId | null>(null)
   const [showProfile, setShowProfile] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [showWelcomeUser, setShowWelcomeUser] = useState(false)
   const [showIntro, setShowIntro] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
@@ -70,11 +78,19 @@ export function MainLayout({
     introImageUrl,
     introAudioUrl,
     hasIntroImage,
-    hasIntroAudio,
+    hasCustomIntroAudio,
+    defaultIntroAudioUrl,
     hasIntroMedia,
     uploadIntroMedia,
     removeIntroMedia,
   } = useIntroMedia()
+
+  const {
+    avatarUrl,
+    hasCustomAvatar,
+    uploadAvatar,
+    removeAvatar,
+  } = useProfileAvatar(currentUser)
 
   useEffect(() => {
     if (!ready || !introReady) return
@@ -82,10 +98,25 @@ export function MainLayout({
       setShowIntro(true)
       return
     }
-    if (!hasSeenWelcome()) {
+    if (!hasWelcomeUserThisSession()) {
+      setShowWelcomeUser(true)
+    } else if (!hasSeenWelcome()) {
       setShowWelcome(true)
     }
   }, [ready, introReady, hasIntroMedia])
+
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false)
+    setShowWelcomeUser(true)
+  }, [])
+
+  const handleWelcomeUserComplete = useCallback(() => {
+    markWelcomeUserThisSession()
+    setShowWelcomeUser(false)
+    if (!hasSeenWelcome()) {
+      setShowWelcome(true)
+    }
+  }, [])
 
   const memoryCounts = useMemo(() => {
     const counts = {} as Record<StageId, number>
@@ -178,24 +209,27 @@ export function MainLayout({
       />
 
       {showProfile ? (
-        <div className="pt-20">
-          <ProfilePanel
-            username={currentUser}
-            onChangePassword={onChangePassword}
-            loginPreviewUrl={loginBgUrl ?? defaultLoginUrl}
-            heroPreviewUrl={heroCoverUrl ?? defaultHeroUrl}
-            hasCustomLogin={hasCustomLogin}
-            hasCustomHero={hasCustomHero}
-            uploadBackground={uploadBackground}
-            removeBackground={removeBackground}
-            introImagePreviewUrl={introImageUrl}
-            introAudioPreviewUrl={introAudioUrl}
-            hasIntroImage={hasIntroImage}
-            hasIntroAudio={hasIntroAudio}
-            uploadIntroMedia={uploadIntroMedia}
-            removeIntroMedia={removeIntroMedia}
-          />
-        </div>
+        <ProfilePanel
+          username={currentUser}
+          avatarUrl={avatarUrl}
+          hasCustomAvatar={hasCustomAvatar}
+          uploadAvatar={uploadAvatar}
+          removeAvatar={removeAvatar}
+          onChangePassword={onChangePassword}
+          loginPreviewUrl={loginBgUrl ?? defaultLoginUrl}
+          heroPreviewUrl={heroCoverUrl ?? defaultHeroUrl}
+          hasCustomLogin={hasCustomLogin}
+          hasCustomHero={hasCustomHero}
+          uploadBackground={uploadBackground}
+          removeBackground={removeBackground}
+          introImagePreviewUrl={introImageUrl}
+          introAudioPreviewUrl={introAudioUrl}
+          hasIntroImage={hasIntroImage}
+          hasCustomIntroAudio={hasCustomIntroAudio}
+          defaultIntroAudioUrl={defaultIntroAudioUrl}
+          uploadIntroMedia={uploadIntroMedia}
+          removeIntroMedia={removeIntroMedia}
+        />
       ) : (
         <>
           <HeroCover
@@ -252,7 +286,14 @@ export function MainLayout({
         open={showIntro}
         imageUrl={introImageUrl}
         audioUrl={introAudioUrl}
-        onComplete={() => setShowIntro(false)}
+        onComplete={handleIntroComplete}
+        onUploadAudio={(file) => uploadIntroMedia('audio', file)}
+      />
+
+      <WelcomeUserOverlay
+        open={showWelcomeUser}
+        username={currentUser}
+        onComplete={handleWelcomeUserComplete}
       />
 
       <WelcomeOverlay open={showWelcome} onClose={handleWelcomeClose} />

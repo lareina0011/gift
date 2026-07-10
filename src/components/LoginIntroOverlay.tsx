@@ -3,12 +3,15 @@ import { ImageIcon, Music } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { APP_CONFIG } from '../constants/config'
 import { markIntroPlayedThisSession } from '../utils/introMedia'
+import { Gramophone } from './Gramophone'
+import { IntroAudioUpload } from './IntroAudioUpload'
 
 interface LoginIntroOverlayProps {
   open: boolean
   imageUrl: string | null
   audioUrl: string | null
   onComplete: () => void
+  onUploadAudio?: (file: File) => Promise<{ ok: boolean; message: string }>
 }
 
 const IMAGE_ONLY_MS = 5000
@@ -18,6 +21,7 @@ export function LoginIntroOverlay({
   imageUrl,
   audioUrl,
   onComplete,
+  onUploadAudio,
 }: LoginIntroOverlayProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [progress, setProgress] = useState(0)
@@ -132,13 +136,18 @@ export function LoginIntroOverlay({
                     <Music className={`h-3.5 w-3.5 ${playing ? 'text-fuchsia-300/80' : ''}`} />
                     <span>{playing ? '正在播放开场音频…' : '准备播放…'}</span>
                   </div>
-                  <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/10">
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 to-violet-400"
-                      style={{ width: `${progress * 100}%` }}
-                    />
-                  </div>
                 </>
+              ) : onUploadAudio ? (
+                <div className="w-full max-w-sm">
+                  <IntroAudioUpload compact onUpload={onUploadAudio} />
+                  <button
+                    type="button"
+                    onClick={finish}
+                    className="mt-3 w-full text-center text-xs text-white/30 transition hover:text-white/50"
+                  >
+                    跳过，直接进入 →
+                  </button>
+                </div>
               ) : (
                 <div className="flex items-center gap-2 rounded-full border border-dashed border-white/10 px-4 py-2 text-xs text-white/25">
                   <Music className="h-3.5 w-3.5" />
@@ -149,6 +158,20 @@ export function LoginIntroOverlay({
 
             <p className="mt-8 text-center text-xs text-white/25">
               {audioUrl ? '音频结束后将自动进入' : '稍后将自动进入'}
+            </p>
+          </motion.div>
+
+          {/* 底部留声机 */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ delay: 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 sm:bottom-10"
+          >
+            <Gramophone playing={playing && !!audioUrl} progress={progress} />
+            <p className="mt-1 text-center text-[10px] tracking-[0.2em] text-white/20">
+              {audioUrl ? '拾光留声' : '等待音频'}
             </p>
           </motion.div>
         </motion.div>

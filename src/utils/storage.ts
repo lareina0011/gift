@@ -9,6 +9,7 @@ const AUTH_KEY = 'gg-auth'
 const CURRENT_USER_KEY = 'gg-current-user'
 const ACCOUNTS_KEY = 'gg-accounts'
 const WELCOME_KEY = 'gg-welcome-seen'
+const WELCOME_USER_SESSION_KEY = 'gg-welcome-user-session'
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -123,6 +124,18 @@ export function hasSeenWelcome(): boolean {
 
 export function markWelcomeSeen(): void {
   localStorage.setItem(WELCOME_KEY, 'true')
+}
+
+export function hasWelcomeUserThisSession(): boolean {
+  return sessionStorage.getItem(WELCOME_USER_SESSION_KEY) === 'true'
+}
+
+export function markWelcomeUserThisSession(): void {
+  sessionStorage.setItem(WELCOME_USER_SESSION_KEY, 'true')
+}
+
+export function clearWelcomeUserSession(): void {
+  sessionStorage.removeItem(WELCOME_USER_SESSION_KEY)
 }
 
 export function generateId(): string {

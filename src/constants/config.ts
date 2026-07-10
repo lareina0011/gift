@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   /** 网站标题 */
   siteTitle: '拾光录',
   /** 登录页副标题 */
-  loginSubtitle: '记录点滴，回望时光',
+  loginSubtitle: '专属于你的那一本',
   /** 首次进入时的寄语 */
   dedication: `从懵懂入学到此刻，
 每一步都算数，每一刻都值得被记住。

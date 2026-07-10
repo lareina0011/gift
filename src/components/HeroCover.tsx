@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
-import { forwardRef, useState } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import { APP_CONFIG } from '../constants/config'
 import { BlurText } from './reactbits'
 
@@ -15,6 +15,16 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
 ) {
   const { hero } = APP_CONFIG
   const [expanded, setExpanded] = useState(false)
+  const [showScrollHint, setShowScrollHint] = useState(true)
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollHint(window.scrollY < 32)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
     <section
@@ -119,21 +129,27 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
         </motion.div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.8 }}
-        className="pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex flex-col items-center gap-2 text-white/35"
-        >
-          <span className="text-[10px] tracking-[0.25em]">向下滚动</span>
-          <ChevronDown className="h-5 w-5" />
-        </motion.div>
-      </motion.div>
+      <AnimatePresence>
+        {showScrollHint && (
+          <motion.div
+            key="scroll-hint"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
+          >
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex flex-col items-center gap-2 text-white/35"
+            >
+              <span className="text-[10px] tracking-[0.25em]">向下滚动</span>
+              <ChevronDown className="h-5 w-5" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 })

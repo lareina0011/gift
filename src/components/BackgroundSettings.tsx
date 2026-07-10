@@ -120,16 +120,16 @@ export function BackgroundSettings({
   return (
     <FadeIn delay={0.15}>
       <SpotlightCard
-        className="mt-6 rounded-xl border border-white/[0.06] bg-[#141414] p-6"
+        className="rounded-2xl border border-white/[0.06] bg-[#141414]/90 p-8 sm:p-10"
         spotlightColor="rgba(255,255,255,0.04)"
       >
-        <h3 className="mb-1 flex items-center gap-2 text-sm text-white/60">
+        <h3 className="mb-2 flex items-center gap-2 text-base text-white/70">
           <ImageIcon className="h-4 w-4" />
           个性化背景
         </h3>
-        <p className="mb-6 text-xs text-white/30">上传后会保留原有的光效与动画层</p>
+        <p className="mb-8 text-sm text-white/35">上传后会保留原有的光效与动画层</p>
 
-        <div className="space-y-8">
+        <div className="grid gap-10 md:grid-cols-2">
           <BackgroundField
             title="登录页背景"
             description="替换登录页底层图片，Plasma 光效仍会叠加在上方。"
@@ -138,8 +138,6 @@ export function BackgroundSettings({
             onUpload={(file) => uploadBackground('login', file)}
             onRemove={() => removeBackground('login')}
           />
-
-          <div className="h-px bg-white/[0.06]" />
 
           <BackgroundField
             title="封面背景"

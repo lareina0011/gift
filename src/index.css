@@ -4,6 +4,7 @@
   --font-serif: 'Noto Serif SC', 'Playfair Display', Georgia, serif;
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-script: 'Great Vibes', 'Segoe Script', cursive;
+  --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
 }
 
 * {
@@ -31,6 +32,10 @@ body {
 
 .font-script {
   font-family: var(--font-script);
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 .scrollbar-hide {
@@ -114,6 +119,38 @@ html {
 }
 
 /* 登录卡片 */
+.login-brand {
+  font-family: var(--font-sans);
+  font-size: 1.625rem;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: rgb(255 255 255 / 0.92);
+}
+
+@media (min-width: 640px) {
+  .login-brand {
+    font-size: 1.875rem;
+  }
+}
+
+.login-tagline {
+  margin-top: 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: rgb(255 255 255 / 0.38);
+}
+
+.login-field-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 0.42);
+}
+
 .login-card {
   background: linear-gradient(
     145deg,
@@ -131,9 +168,15 @@ html {
   position: relative;
   display: flex;
   align-items: center;
+  overflow: hidden;
   border-radius: 0.85rem;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.03);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.03) inset,
+    0 8px 32px rgb(0 0 0 / 0.18);
   transition:
     border-color 0.25s ease,
     background 0.25s ease,
@@ -141,11 +184,12 @@ html {
 }
 
 .login-input-wrap--focused {
-  border-color: rgb(217 70 239 / 0.45);
-  background: rgb(255 255 255 / 0.06);
+  border-color: rgb(217 70 239 / 0.5);
+  background: rgb(255 255 255 / 0.07);
   box-shadow:
-    0 0 0 3px rgb(192 132 252 / 0.12),
-    0 8px 24px rgb(0 0 0 / 0.2);
+    0 0 0 3px rgb(192 132 252 / 0.14),
+    0 0 28px rgb(192 132 252 / 0.12),
+    0 8px 24px rgb(0 0 0 / 0.22);
 }
 
 .login-input-icon {
@@ -204,4 +248,79 @@ html {
     0 14px 36px rgb(168 85 247 / 0.45),
     0 0 0 1px rgb(255 255 255 / 0.18) inset;
   filter: brightness(1.05);
+}
+
+/* 回忆弹窗 */
+.memory-modal-card {
+  background: linear-gradient(
+    145deg,
+    rgb(217 70 239 / 0.28),
+    rgb(139 92 246 / 0.12) 42%,
+    rgb(255 255 255 / 0.06) 72%,
+    rgb(192 132 252 / 0.18)
+  );
+  box-shadow:
+    0 28px 90px rgb(0 0 0 / 0.55),
+    0 0 0 1px rgb(255 255 255 / 0.04) inset;
+}
+
+.memory-upload-zone:hover {
+  box-shadow: 0 0 24px rgb(168 85 247 / 0.08);
+}
+
+.intro-audio-upload:hover {
+  box-shadow: 0 0 24px rgb(168 85 247 / 0.1);
+}
+
+.gramophone {
+  position: relative;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.45));
+}
+
+/* 登录欢迎 · 用户名 */
+.welcome-username span {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  background: linear-gradient(
+    135deg,
+    #faf5ff 0%,
+    #f5d0fe 30%,
+    #e9d5ff 55%,
+    #f0abfc 75%,
+    #faf5ff 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: welcome-shine 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 48px rgba(192, 132, 252, 0.2));
+}
+
+.profile-username {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  background: linear-gradient(120deg, #fff 0%, #e9d5ff 45%, #f0abfc 70%, #fff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.profile-avatar-btn:focus-visible {
+  outline: 2px solid rgb(232 121 249 / 0.5);
+  outline-offset: 3px;
+}
+
+@keyframes welcome-shine {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
 }

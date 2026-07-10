@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { AUTH_ACCOUNTS } from '../constants/config'
 import { clearIntroSession } from '../utils/introMedia'
 import {
+  clearWelcomeUserSession,
   getCurrentUser,
   isAuthenticated,
   loadAccounts,
@@ -37,6 +38,7 @@ export function useAuth() {
 
   const logout = useCallback(() => {
     clearIntroSession()
+    clearWelcomeUserSession()
     setAuthenticated(false)
     setAuthed(false)
   }, [])

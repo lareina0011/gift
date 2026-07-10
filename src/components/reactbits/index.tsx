@@ -241,3 +241,4 @@ export function SpotlightCard({
 
 export { ScrollFloat } from './ScrollFloat'
 export { OrbitImages } from './OrbitImages'
+export { Particles } from './Particles'
