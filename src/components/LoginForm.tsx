@@ -4,7 +4,7 @@ import { Eye, EyeOff, Lock, User } from 'lucide-react'
 import { APP_CONFIG } from '../constants/config'
 
 interface LoginFormProps {
-  onLogin: (username: string, password: string) => boolean
+  onLogin: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>
   onInputActivity?: (active: boolean) => void
 }
 
@@ -34,7 +34,7 @@ export const LoginForm = memo(function LoginForm({
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const username = usernameRef.current?.value.trim() ?? ''
     const password = passwordRef.current?.value ?? ''
@@ -47,11 +47,11 @@ export const LoginForm = memo(function LoginForm({
     setError('')
     setLoading(true)
 
-    const ok = onLogin(username, password)
-    if (!ok) {
-      setError('账号或密码不正确，请再试一次')
-      setLoading(false)
+    const result = await onLogin(username, password)
+    if (!result.ok) {
+      setError(result.message ?? '账号或密码不正确，请再试一次')
     }
+    setLoading(false)
   }
 
   return (

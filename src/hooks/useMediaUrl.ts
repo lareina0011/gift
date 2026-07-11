@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getMediaBlob } from '../utils/storage'
+import { apiBlob } from '../api/client'
 
 export function useMediaUrl(blobKey: string | null) {
   const [url, setUrl] = useState<string | null>(null)
@@ -13,7 +13,7 @@ export function useMediaUrl(blobKey: string | null) {
     let objectUrl: string | null = null
     let cancelled = false
 
-    getMediaBlob(blobKey).then((blob) => {
+    apiBlob(`/api/media/${blobKey}`).then((blob) => {
       if (cancelled || !blob) return
       objectUrl = URL.createObjectURL(blob)
       setUrl(objectUrl)

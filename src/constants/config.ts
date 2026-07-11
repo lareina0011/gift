@@ -12,17 +12,22 @@ export const APP_CONFIG = {
   progressLabel: '时光足迹',
   /** 封面 Hero 区域 */
   hero: {
-    label: 'MEMORY ALBUM',
-    title: '把时光装进这里',
+    label: '拾 · 光 · 录',
+    title: '愿细碎的时光，都被温柔留下',
     description:
-      '写下一段故事，存下一张照片，留下一段视频——日后翻看，皆是温暖。',
+      '一段故事、一张照片、一帧画面，不必多特别，却都值得好好安放。在这里慢慢记下，日后再看，心里依然会暖。',
     exploreText: '开始记录',
     futureText: '写给未来',
   },
 }
 
-/** 登录账号配置（首次使用时的默认账号，修改密码后会保存在浏览器本地） */
+/** 默认账号由后端 server 启动时写入 SQLite，此处仅作文档参考 */
 export const AUTH_ACCOUNTS = [
+  {
+    username: 'lareina',
+    password: '20030621jjb',
+    role: 'admin' as const,
+  },
   {
     username: 'lemon',
     password: '20021007',

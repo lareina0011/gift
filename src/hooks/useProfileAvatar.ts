@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ApiError } from '../api/client'
 import {
-  AVATAR_UPDATED_EVENT,
   loadProfileAvatarBlob,
   removeProfileAvatar,
   saveProfileAvatar,
@@ -12,53 +12,64 @@ export function useProfileAvatar(username: string) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [hasCustomAvatar, setHasCustomAvatar] = useState(false)
   const urlRef = useRef<string | null>(null)
+  const reloadIdRef = useRef(0)
 
-  const revokeUrl = useCallback(() => {
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current)
-    urlRef.current = null
+  const setAvatarFromUrl = useCallback((nextUrl: string | null, custom: boolean) => {
+    const prevUrl = urlRef.current
+    urlRef.current = nextUrl
+    setAvatarUrl(nextUrl)
+    setHasCustomAvatar(custom)
+    if (prevUrl && prevUrl !== nextUrl) {
+      URL.revokeObjectURL(prevUrl)
+    }
   }, [])
 
   const reload = useCallback(async () => {
-    revokeUrl()
+    const reloadId = ++reloadIdRef.current
     const blob = await loadProfileAvatarBlob(username)
-    const url = blob ? URL.createObjectURL(blob) : null
-    urlRef.current = url
-    setAvatarUrl(url)
-    setHasCustomAvatar(!!blob)
+    if (reloadId !== reloadIdRef.current) return
+
+    const nextUrl = blob ? URL.createObjectURL(blob) : null
+    setAvatarFromUrl(nextUrl, !!blob)
     setReady(true)
-  }, [username, revokeUrl])
+  }, [username, setAvatarFromUrl])
 
   useEffect(() => {
     setReady(false)
     reload()
-    const onUpdate = (e: Event) => {
-      const detail = (e as CustomEvent<{ username?: string }>).detail
-      if (!detail?.username || detail.username === username) reload()
-    }
-    window.addEventListener(AVATAR_UPDATED_EVENT, onUpdate)
     return () => {
-      window.removeEventListener(AVATAR_UPDATED_EVENT, onUpdate)
-      revokeUrl()
+      reloadIdRef.current += 1
+      if (urlRef.current) {
+        URL.revokeObjectURL(urlRef.current)
+        urlRef.current = null
+      }
     }
-  }, [username, reload, revokeUrl])
+  }, [reload])
 
   const uploadAvatar = useCallback(
     async (file: File) => {
       const validation = validateAvatarFile(file)
       if (!validation.ok) return validation
       try {
+        const previewUrl = URL.createObjectURL(file)
+        setAvatarFromUrl(previewUrl, true)
+
         await saveProfileAvatar(username, file)
+        await reload()
         return { ok: true, message: '头像已更新' }
-      } catch {
-        return { ok: false, message: '保存失败，请稍后再试' }
+      } catch (err) {
+        await reload()
+        const message = err instanceof ApiError ? err.message : '保存失败，请稍后再试'
+        return { ok: false, message }
       }
     },
-    [username],
+    [username, reload, setAvatarFromUrl],
   )
 
   const removeAvatar = useCallback(async () => {
     await removeProfileAvatar(username)
-  }, [username])
+    await reload()
+  }, [username, reload])
 
   return { ready, avatarUrl, hasCustomAvatar, uploadAvatar, removeAvatar }
 }

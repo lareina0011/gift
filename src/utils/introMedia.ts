@@ -1,4 +1,4 @@
-import { deleteMediaBlob, getMediaBlob, saveMediaBlob } from './storage'
+import { apiBlob, apiDelete, apiUpload } from '../api/client'
 
 export const INTRO_MEDIA_KEYS = {
   image: 'intro-image',
@@ -38,17 +38,17 @@ export function validateIntroAudio(file: File): { ok: true } | { ok: false; mess
 }
 
 export async function saveIntroMedia(type: IntroMediaType, file: File): Promise<void> {
-  await saveMediaBlob(INTRO_MEDIA_KEYS[type], file)
+  await apiUpload(`/api/settings/intro/${type}`, file)
   window.dispatchEvent(new CustomEvent(INTRO_UPDATED_EVENT, { detail: { type } }))
 }
 
 export async function removeIntroMedia(type: IntroMediaType): Promise<void> {
-  await deleteMediaBlob(INTRO_MEDIA_KEYS[type])
+  await apiDelete(`/api/settings/intro/${type}`)
   window.dispatchEvent(new CustomEvent(INTRO_UPDATED_EVENT, { detail: { type } }))
 }
 
 export async function loadIntroBlob(type: IntroMediaType): Promise<Blob | null> {
-  return getMediaBlob(INTRO_MEDIA_KEYS[type])
+  return apiBlob(`/api/settings/intro/${type}`)
 }
 
 const INTRO_SESSION_KEY = 'gg-intro-session-done'

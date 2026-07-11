@@ -34,7 +34,7 @@ interface MainLayoutProps {
   onChangePassword: (
     oldPassword: string,
     newPassword: string,
-  ) => { ok: boolean; message: string }
+  ) => Promise<{ ok: boolean; message: string }>
 }
 
 export function MainLayout({

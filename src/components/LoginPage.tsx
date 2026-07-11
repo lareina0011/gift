@@ -8,7 +8,7 @@ import { Particles } from './reactbits'
 const LOGIN_PARTICLE_COLOR = '#7c3aed'
 
 interface LoginPageProps {
-  onLogin: (username: string, password: string) => boolean
+  onLogin: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {

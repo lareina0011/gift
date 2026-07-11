@@ -1,4 +1,4 @@
-import { deleteMediaBlob, getMediaBlob, saveMediaBlob } from './storage'
+import { apiBlob, apiDelete, apiUpload } from '../api/client'
 
 export const BG_IMAGE_KEYS = {
   login: 'bg-login',
@@ -23,20 +23,20 @@ export function validateBackgroundFile(file: File): { ok: true } | { ok: false; 
 }
 
 export async function saveBackgroundImage(type: BackgroundImageType, file: File): Promise<void> {
-  await saveMediaBlob(BG_IMAGE_KEYS[type], file)
+  await apiUpload(`/api/settings/background/${type}`, file)
   window.dispatchEvent(new CustomEvent(BG_UPDATED_EVENT, { detail: { type } }))
 }
 
 export async function removeBackgroundImage(type: BackgroundImageType): Promise<void> {
-  await deleteMediaBlob(BG_IMAGE_KEYS[type])
+  await apiDelete(`/api/settings/background/${type}`)
   window.dispatchEvent(new CustomEvent(BG_UPDATED_EVENT, { detail: { type } }))
 }
 
 export async function loadBackgroundBlob(type: BackgroundImageType): Promise<Blob | null> {
-  return getMediaBlob(BG_IMAGE_KEYS[type])
+  return apiBlob(`/api/settings/background/${type}`)
 }
 
 export async function hasBackgroundImage(type: BackgroundImageType): Promise<boolean> {
-  const blob = await getMediaBlob(BG_IMAGE_KEYS[type])
+  const blob = await loadBackgroundBlob(type)
   return blob !== null
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
+import { apiBlob } from '../api/client'
 import type { Memory } from '../types'
-import { getMediaBlob } from '../utils/storage'
 
 export interface MemoryImageEntry {
   url: string
@@ -39,7 +39,7 @@ export function useMemoryImageUrls(memories: Memory[]) {
       const loaded: MemoryImageEntry[] = []
 
       for (const entry of entries) {
-        const blob = await getMediaBlob(entry.blobKey)
+        const blob = await apiBlob(`/api/media/${entry.blobKey}`)
         if (cancelled) return
         if (!blob) continue
         const url = URL.createObjectURL(blob)

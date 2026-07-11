@@ -1,34 +1,39 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FutureWish, Memory, StageId } from '../types'
 import {
-  deleteMediaBlob,
-  generateId,
-  loadMemories,
-  loadWishes,
-  saveMediaBlob,
-  saveMemories,
-  saveWishes,
-} from '../utils/storage'
+  createMemory,
+  createWish,
+  deleteMemoryApi,
+  deleteWishApi,
+  fetchMemories,
+  fetchWishes,
+} from '../api/data'
 
 export function useMemories() {
   const [memories, setMemories] = useState<Memory[]>([])
   const [wishes, setWishes] = useState<FutureWish[]>([])
   const [ready, setReady] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setMemories(loadMemories())
-    setWishes(loadWishes())
-    setReady(true)
-  }, [])
+    let cancelled = false
 
-  const persistMemories = useCallback((next: Memory[]) => {
-    setMemories(next)
-    saveMemories(next)
-  }, [])
+    Promise.all([fetchMemories(), fetchWishes()])
+      .then(([nextMemories, nextWishes]) => {
+        if (cancelled) return
+        setMemories(nextMemories)
+        setWishes(nextWishes)
+        setReady(true)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : '加载失败')
+        setReady(true)
+      })
 
-  const persistWishes = useCallback((next: FutureWish[]) => {
-    setWishes(next)
-    saveWishes(next)
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const addMemory = useCallback(
@@ -36,67 +41,27 @@ export function useMemories() {
       stageId: StageId,
       data: { title: string; content: string; date: string; files: File[] },
     ) => {
-      const media = await Promise.all(
-        data.files.map(async (file) => {
-          const blobKey = generateId()
-          await saveMediaBlob(blobKey, file)
-          const type = file.type.startsWith('video/') ? 'video' : 'image'
-          return {
-            id: generateId(),
-            type: type as 'image' | 'video',
-            name: file.name,
-            blobKey,
-          }
-        }),
-      )
-
-      const memory: Memory = {
-        id: generateId(),
-        stageId,
-        title: data.title,
-        content: data.content,
-        date: data.date,
-        media,
-        createdAt: new Date().toISOString(),
-      }
-
-      persistMemories([memory, ...loadMemories()])
+      const memory = await createMemory(stageId, data)
+      setMemories((prev) => [memory, ...prev])
       return memory
     },
-    [persistMemories],
+    [],
   )
 
-  const deleteMemory = useCallback(
-    async (id: string) => {
-      const current = loadMemories()
-      const target = current.find((m) => m.id === id)
-      if (target) {
-        await Promise.all(target.media.map((m) => deleteMediaBlob(m.blobKey)))
-      }
-      persistMemories(current.filter((m) => m.id !== id))
-    },
-    [persistMemories],
-  )
+  const deleteMemory = useCallback(async (id: string) => {
+    await deleteMemoryApi(id)
+    setMemories((prev) => prev.filter((m) => m.id !== id))
+  }, [])
 
-  const addWish = useCallback(
-    (text: string, emoji: string) => {
-      const wish: FutureWish = {
-        id: generateId(),
-        text,
-        emoji,
-        createdAt: new Date().toISOString(),
-      }
-      persistWishes([wish, ...loadWishes()])
-    },
-    [persistWishes],
-  )
+  const addWish = useCallback(async (text: string, emoji: string) => {
+    const wish = await createWish(text, emoji)
+    setWishes((prev) => [wish, ...prev])
+  }, [])
 
-  const deleteWish = useCallback(
-    (id: string) => {
-      persistWishes(loadWishes().filter((w) => w.id !== id))
-    },
-    [persistWishes],
-  )
+  const deleteWish = useCallback(async (id: string) => {
+    await deleteWishApi(id)
+    setWishes((prev) => prev.filter((w) => w.id !== id))
+  }, [])
 
   const getMemoriesByStage = useCallback(
     (stageId: StageId) =>
@@ -113,6 +78,7 @@ export function useMemories() {
 
   return {
     ready,
+    error,
     memories,
     wishes,
     addMemory,

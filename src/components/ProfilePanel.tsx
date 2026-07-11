@@ -16,7 +16,7 @@ interface ProfilePanelProps {
   onChangePassword: (
     oldPassword: string,
     newPassword: string,
-  ) => { ok: boolean; message: string }
+  ) => Promise<{ ok: boolean; message: string }>
   loginPreviewUrl: string | null
   heroPreviewUrl: string
   hasCustomLogin: boolean
@@ -58,10 +58,11 @@ export function ProfilePanel({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showOld, setShowOld] = useState(false)
   const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMessage('')
     setSuccess(false)
@@ -71,7 +72,7 @@ export function ProfilePanel({
       return
     }
 
-    const result = onChangePassword(oldPassword, newPassword)
+    const result = await onChangePassword(oldPassword, newPassword)
     setMessage(result.message)
     setSuccess(result.ok)
 
@@ -176,14 +177,23 @@ export function ProfilePanel({
                   <label className="mb-2 block text-xs tracking-[0.18em] text-white/35">
                     确认新密码
                   </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={inputClass}
-                    placeholder="再次输入新密码"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirm ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`${inputClass} pr-12`}
+                      placeholder="再次输入新密码"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                    >
+                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {message && (

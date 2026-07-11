@@ -48,7 +48,7 @@ export function ProfileAvatar({
         title="点击上传头像"
       >
         {avatarUrl ? (
-          <img src={avatarUrl} alt={username} className="h-full w-full object-cover" />
+          <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <AppIcon config={APP_ICONS.profile} size={size === 'lg' ? 40 : 28} className="text-white/40" />

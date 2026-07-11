@@ -1,16 +1,12 @@
-import { deleteMediaBlob, getMediaBlob, saveMediaBlob } from './storage'
-
-export const AVATAR_UPDATED_EVENT = 'gg-avatar-updated'
+import { apiBlob, apiDelete, apiUpload } from '../api/client'
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif)$/i
 const MAX_SIZE_MB = 8
 
-function avatarKey(username: string) {
-  return `profile-avatar-${username}`
-}
-
 export function validateAvatarFile(file: File): { ok: true } | { ok: false; message: string } {
-  if (!IMAGE_TYPES.includes(file.type)) {
+  const validType = IMAGE_TYPES.includes(file.type) || IMAGE_EXT.test(file.name)
+  if (!validType) {
     return { ok: false, message: '请上传 JPG、PNG、WebP 或 GIF 格式的图片' }
   }
   if (file.size > MAX_SIZE_MB * 1024 * 1024) {
@@ -20,15 +16,13 @@ export function validateAvatarFile(file: File): { ok: true } | { ok: false; mess
 }
 
 export async function saveProfileAvatar(username: string, file: File): Promise<void> {
-  await saveMediaBlob(avatarKey(username), file)
-  window.dispatchEvent(new CustomEvent(AVATAR_UPDATED_EVENT, { detail: { username } }))
+  await apiUpload('/api/settings/avatar', file)
 }
 
-export async function removeProfileAvatar(username: string): Promise<void> {
-  await deleteMediaBlob(avatarKey(username))
-  window.dispatchEvent(new CustomEvent(AVATAR_UPDATED_EVENT, { detail: { username } }))
+export async function removeProfileAvatar(_username: string): Promise<void> {
+  await apiDelete('/api/settings/avatar')
 }
 
 export async function loadProfileAvatarBlob(username: string): Promise<Blob | null> {
-  return getMediaBlob(avatarKey(username))
+  return apiBlob(`/api/settings/avatar/${encodeURIComponent(username)}?t=${Date.now()}`)
 }
