@@ -1,6 +1,8 @@
 import { ImageIcon } from 'lucide-react'
-import type { Memory } from '../types'
+import { useMemo, useState } from 'react'
+import type { MediaItem, Memory } from '../types'
 import { useMemoryImageUrls } from '../hooks/useMemoryImageUrls'
+import { MediaViewer } from './MediaViewer'
 import { FadeIn, OrbitImages } from './reactbits'
 
 interface MemoryOrbitGalleryProps {
@@ -9,6 +11,24 @@ interface MemoryOrbitGalleryProps {
 
 export function MemoryOrbitGallery({ memories }: MemoryOrbitGalleryProps) {
   const { images, ready, totalImageCount } = useMemoryImageUrls(memories)
+  const [viewer, setViewer] = useState<{ media: MediaItem[]; index: number } | null>(null)
+
+  const unlockedMemories = useMemo(
+    () => memories.filter((m) => !m.locked),
+    [memories],
+  )
+
+  const handleClick = (index: number) => {
+    const entry = images[index]
+    if (!entry) return
+    const memory = unlockedMemories.find((m) => m.id === entry.memoryId)
+    if (!memory) return
+    const mediaIndex = memory.media.findIndex((m) => m.id === entry.mediaId)
+    setViewer({
+      media: memory.media,
+      index: mediaIndex >= 0 ? mediaIndex : 0,
+    })
+  }
 
   return (
     <section className="border-t border-white/[0.06] py-10 sm:py-14">
@@ -23,7 +43,7 @@ export function MemoryOrbitGallery({ memories }: MemoryOrbitGalleryProps) {
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-white/40">
               {totalImageCount > 0
-                ? `已收录 ${totalImageCount} 张照片，在轨道上缓缓流转`
+                ? `已收录 ${totalImageCount} 张照片，点击轨道上的照片可放大查看`
                 : '上传照片后，它们会在这里组成一条时光轨道'}
             </p>
           </div>
@@ -57,6 +77,7 @@ export function MemoryOrbitGallery({ memories }: MemoryOrbitGalleryProps) {
               radiusX={620}
               radiusY={200}
               itemClassName="h-full w-full rounded-xl border border-white/15 object-cover shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+              onItemClick={handleClick}
               centerContent={
                 <div className="pointer-events-none text-center">
                   <p className="font-serif text-3xl font-bold text-white/90 sm:text-4xl">
@@ -69,6 +90,14 @@ export function MemoryOrbitGallery({ memories }: MemoryOrbitGalleryProps) {
           </FadeIn>
         )}
       </div>
+
+      {viewer && (
+        <MediaViewer
+          media={viewer.media}
+          initialIndex={viewer.index}
+          onClose={() => setViewer(null)}
+        />
+      )}
     </section>
   )
 }

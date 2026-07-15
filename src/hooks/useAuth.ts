@@ -1,19 +1,26 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   changePasswordApi,
+  getCurrentRole,
   isAuthenticated,
   loginApi,
   setAuthenticated,
   verifySession,
 } from '../api/client'
+import { clearBlessingSession } from '../utils/blessingSession'
 import { clearIntroSession } from '../utils/introMedia'
 import { clearWelcomeUserSession } from '../utils/storage'
+import type { UserRole } from '../types'
 
 export function useAuth() {
   const [authed, setAuthed] = useState(isAuthenticated)
   const [currentUser, setCurrentUserState] = useState<string | null>(
     isAuthenticated() ? sessionStorage.getItem('gg-current-user') : null,
   )
+  const [role, setRole] = useState<UserRole | null>(() => {
+    const r = getCurrentRole()
+    return r === 'editor' || r === 'viewer' ? r : null
+  })
   const [checking, setChecking] = useState(isAuthenticated())
 
   useEffect(() => {
@@ -25,6 +32,8 @@ export function useAuth() {
     verifySession().then((valid) => {
       setAuthed(valid)
       setCurrentUserState(valid ? sessionStorage.getItem('gg-current-user') : null)
+      const r = getCurrentRole()
+      setRole(valid && (r === 'editor' || r === 'viewer') ? r : null)
       setChecking(false)
     })
   }, [])
@@ -34,6 +43,7 @@ export function useAuth() {
     if (result.ok) {
       setAuthed(true)
       setCurrentUserState(result.username)
+      setRole(result.role === 'editor' || result.role === 'viewer' ? result.role : null)
       return { ok: true }
     }
     return { ok: false, message: result.message }
@@ -42,9 +52,11 @@ export function useAuth() {
   const logout = useCallback(() => {
     clearIntroSession()
     clearWelcomeUserSession()
+    clearBlessingSession()
     setAuthenticated(false)
     setAuthed(false)
     setCurrentUserState(null)
+    setRole(null)
   }, [])
 
   const changePassword = useCallback(
@@ -57,5 +69,14 @@ export function useAuth() {
     [],
   )
 
-  return { authed, checking, currentUser, login, logout, changePassword }
+  return {
+    authed,
+    checking,
+    currentUser,
+    role,
+    isEditor: role === 'editor',
+    login,
+    logout,
+    changePassword,
+  }
 }

@@ -137,7 +137,7 @@ export const LoginForm = memo(function LoginForm({
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-white/25 transition hover:bg-white/5 hover:text-white/60"
+                  className="absolute right-3 top-1/2 z-[2] -translate-y-1/2 rounded-lg p-1.5 text-white/25 transition hover:bg-white/5 hover:text-white/60"
                   tabIndex={-1}
                   aria-label={showPassword ? '隐藏密码' : '显示密码'}
                 >

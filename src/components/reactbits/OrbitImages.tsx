@@ -56,6 +56,7 @@ interface OrbitImagesProps {
   centerContent?: ReactNode
   responsive?: boolean
   itemClassName?: string
+  onItemClick?: (index: number) => void
 }
 
 interface OrbitItemProps {
@@ -67,6 +68,7 @@ interface OrbitItemProps {
   rotation: number
   progress: MotionValue<number>
   fill: boolean
+  onClick?: () => void
 }
 
 function generateEllipsePath(cx: number, cy: number, rx: number, ry: number): string {
@@ -150,6 +152,7 @@ function OrbitItem({
   rotation,
   progress,
   fill,
+  onClick,
 }: OrbitItemProps) {
   const itemOffset = fill ? (index / totalItems) * 100 : 0
 
@@ -160,7 +163,7 @@ function OrbitItem({
 
   return (
     <motion.div
-      className="absolute will-change-transform select-none"
+      className={`absolute will-change-transform select-none ${onClick ? 'cursor-pointer' : ''}`}
       style={{
         width: itemSize,
         height: itemSize,
@@ -169,6 +172,8 @@ function OrbitItem({
         offsetAnchor: 'center center',
         offsetDistance,
       }}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
     >
       <div style={{ transform: `rotate(${-rotation}deg)` }}>{item}</div>
     </motion.div>
@@ -202,6 +207,7 @@ export function OrbitImages({
   centerContent,
   responsive = false,
   itemClassName = 'h-full w-full object-cover',
+  onItemClick,
 }: OrbitImagesProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState<number | null>(null)
@@ -344,6 +350,7 @@ export function OrbitImages({
               rotation={rotation}
               progress={progress}
               fill={fill}
+              onClick={onItemClick ? () => onItemClick(index) : undefined}
             />
           ))}
         </div>

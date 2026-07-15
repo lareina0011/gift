@@ -15,7 +15,8 @@ export function validateAvatarFile(file: File): { ok: true } | { ok: false; mess
   return { ok: true }
 }
 
-export async function saveProfileAvatar(username: string, file: File): Promise<void> {
+export async function saveProfileAvatar(_username: string, file: File): Promise<void> {
+  void _username
   await apiUpload('/api/settings/avatar', file)
 }
 

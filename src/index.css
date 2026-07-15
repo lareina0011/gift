@@ -166,12 +166,11 @@ html {
 
 .login-input-wrap {
   position: relative;
-  display: flex;
-  align-items: center;
+  display: block;
   overflow: hidden;
   border-radius: 0.85rem;
   border: 1px solid rgb(255 255 255 / 0.1);
-  background: rgb(255 255 255 / 0.04);
+  background: rgb(18 15 28 / 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow:
@@ -185,7 +184,7 @@ html {
 
 .login-input-wrap--focused {
   border-color: rgb(217 70 239 / 0.5);
-  background: rgb(255 255 255 / 0.07);
+  background: rgb(22 18 34 / 0.88);
   box-shadow:
     0 0 0 3px rgb(192 132 252 / 0.14),
     0 0 28px rgb(192 132 252 / 0.12),
@@ -193,8 +192,12 @@ html {
 }
 
 .login-input-icon {
-  margin-left: 0.95rem;
-  flex-shrink: 0;
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  pointer-events: none;
   color: rgb(255 255 255 / 0.28);
   transition: color 0.25s ease;
 }
@@ -204,15 +207,52 @@ html {
 }
 
 .login-input {
+  display: block;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 0.85rem;
   background: transparent;
-  padding: 0.9rem 1rem 0.9rem 0.75rem;
+  padding: 0.9rem 1rem 0.9rem 2.75rem;
   color: #fff;
   outline: none;
+  box-shadow: none;
+  color-scheme: dark;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 无左侧图标时（如多行故事框）收紧左内边距 */
+.login-input-wrap > .login-input:first-child {
+  padding-left: 1rem;
 }
 
 .login-input::placeholder {
   color: rgb(255 255 255 / 0.22);
+}
+
+/*
+  自动填充时浏览器会给 input 上色。
+  输入框已铺满圆角容器，用同色 inset 盖住，避免「左边图标、右边色块」的断层。
+*/
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus,
+.login-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+  border: none;
+  border-radius: 0.85rem;
+  -webkit-box-shadow: 0 0 0 1000px rgb(18 15 28) inset !important;
+  box-shadow: 0 0 0 1000px rgb(18 15 28) inset !important;
+  transition: background-color 99999s ease-out;
+}
+
+.login-input-wrap--focused .login-input:-webkit-autofill,
+.login-input-wrap--focused .login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgb(22 18 34) inset !important;
+  box-shadow: 0 0 0 1000px rgb(22 18 34) inset !important;
 }
 
 .login-submit-btn {

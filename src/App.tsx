@@ -3,7 +3,7 @@ import { LoginPage } from './components/LoginPage'
 import { MainLayout } from './components/MainLayout'
 
 export default function App() {
-  const { authed, checking, currentUser, login, logout, changePassword } = useAuth()
+  const { authed, checking, currentUser, isEditor, login, logout, changePassword } = useAuth()
 
   if (checking) {
     return (
@@ -20,6 +20,7 @@ export default function App() {
   return (
     <MainLayout
       currentUser={currentUser ?? ''}
+      isEditor={isEditor}
       onLogout={logout}
       onChangePassword={changePassword}
     />

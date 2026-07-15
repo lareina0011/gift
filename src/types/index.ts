@@ -23,6 +23,8 @@ export interface Memory {
   date: string
   media: MediaItem[]
   createdAt: string
+  unlockAt?: string | null
+  locked?: boolean
 }
 
 export interface FutureWish {
@@ -32,8 +34,36 @@ export interface FutureWish {
   createdAt: string
 }
 
+export type UserRole = 'editor' | 'viewer'
+
+export interface StageBlessing {
+  id: string
+  stageId: StageId
+  friendName: string
+  caption: string
+  blobKey: string
+  sortOrder: number
+  createdAt: string
+}
+
+export interface LetterVoice {
+  id: string
+  blobKey: string
+  label: string
+  sortOrder: number
+  createdAt: string
+}
+
+export interface SiteLetter {
+  id: string
+  title: string
+  body: string
+  updatedAt: string
+  voices: LetterVoice[]
+}
+
 export interface AuthAccount {
   username: string
   password: string
-  role: 'admin'
+  role: UserRole
 }

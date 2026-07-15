@@ -13,7 +13,6 @@ interface ProfileAvatarProps {
 }
 
 export function ProfileAvatar({
-  username,
   avatarUrl,
   hasCustomAvatar,
   onUpload,

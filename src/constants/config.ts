@@ -7,7 +7,7 @@ export const APP_CONFIG = {
   /** 首次进入时的寄语 */
   dedication: `从懵懂入学到此刻，
 每一步都算数，每一刻都值得被记住。
-愿此间点滴，成为日后回望时最温柔的光。`,
+愿你所信所教，都温柔有光。`,
   /** 底部进度条标签 */
   progressLabel: '时光足迹',
   /** 封面 Hero 区域 */
@@ -15,7 +15,7 @@ export const APP_CONFIG = {
     label: '拾 · 光 · 录',
     title: '愿细碎的时光，都被温柔留下',
     description:
-      '一段故事、一张照片、一帧画面，不必多特别，却都值得好好安放。在这里慢慢记下，日后再看，心里依然会暖。',
+      '不必件件盛大。那些被风翻过的书页、讲台上初亮的志气、不经意留下的笑，都足够成为记忆的褶皱。收进这一本里，某天翻开，仍能听见旧日的温度。',
     exploreText: '开始记录',
     futureText: '写给未来',
   },
@@ -26,11 +26,11 @@ export const AUTH_ACCOUNTS = [
   {
     username: 'lareina',
     password: '20030621jjb',
-    role: 'admin' as const,
+    role: 'editor' as const,
   },
   {
     username: 'lemon',
     password: '20021007',
-    role: 'admin' as const,
+    role: 'viewer' as const,
   },
 ]

@@ -19,6 +19,22 @@ export interface DbMemory {
   content: string
   date: string
   created_at: string
+  unlock_at: string | null
+}
+
+export interface DbSiteLetter {
+  id: string
+  title: string
+  body: string
+  updated_at: string
+}
+
+export interface DbLetterVoice {
+  id: string
+  blob_key: string
+  label: string
+  sort_order: number
+  created_at: string
 }
 
 export interface DbMemoryMedia {
@@ -110,9 +126,66 @@ export function initDb(): void {
       setting_key TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS stage_blessings (
+      id TEXT PRIMARY KEY,
+      stage_id TEXT NOT NULL,
+      friend_name TEXT NOT NULL DEFAULT '',
+      caption TEXT NOT NULL DEFAULT '',
+      blob_key TEXT NOT NULL UNIQUE,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS site_letters (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS letter_voices (
+      id TEXT PRIMARY KEY,
+      blob_key TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
   `)
 
+  migrateMemoryUnlockAt()
+  seedLetter()
   seedUsers()
+}
+
+function migrateMemoryUnlockAt(): void {
+  const cols = db.prepare(`PRAGMA table_info(memories)`).all() as Array<{ name: string }>
+  if (!cols.some((c) => c.name === 'unlock_at')) {
+    db.exec(`ALTER TABLE memories ADD COLUMN unlock_at TEXT`)
+  }
+}
+
+function seedLetter(): void {
+  const existing = db.prepare(`SELECT id FROM site_letters LIMIT 1`).get() as { id: string } | undefined
+  if (existing) return
+  db.prepare(
+    `INSERT INTO site_letters (id, title, body, updated_at) VALUES (?, ?, ?, ?)`,
+  ).run(
+    'default',
+    '写给你的一封信',
+    '亲爱的你：\n\n愿这一本里的细碎时光，都能陪你走到讲台上那束温柔的光。\n\n—— 拾光录',
+    new Date().toISOString(),
+  )
+}
+
+export interface DbStageBlessing {
+  id: string
+  stage_id: string
+  friend_name: string
+  caption: string
+  blob_key: string
+  sort_order: number
+  created_at: string
 }
 
 function seedUsers(): void {
@@ -120,11 +193,18 @@ function seedUsers(): void {
     INSERT OR IGNORE INTO users (username, password_hash, role)
     VALUES (@username, @password_hash, @role)
   `)
+  const syncRole = db.prepare(`
+    UPDATE users SET role = @role WHERE username = @username
+  `)
 
   for (const user of DEFAULT_USERS) {
     insert.run({
       username: user.username,
       password_hash: bcrypt.hashSync(user.password, 10),
+      role: user.role,
+    })
+    syncRole.run({
+      username: user.username,
       role: user.role,
     })
   }

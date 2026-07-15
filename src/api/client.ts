@@ -1,6 +1,7 @@
 const TOKEN_KEY = 'gg-token'
 const AUTH_KEY = 'gg-auth'
 const CURRENT_USER_KEY = 'gg-current-user'
+const CURRENT_ROLE_KEY = 'gg-current-role'
 
 export class ApiError extends Error {
   status: number
@@ -33,6 +34,7 @@ export function setAuthenticated(value: boolean): void {
   } else {
     sessionStorage.removeItem(AUTH_KEY)
     sessionStorage.removeItem(CURRENT_USER_KEY)
+    sessionStorage.removeItem(CURRENT_ROLE_KEY)
     setToken(null)
   }
 }
@@ -43,6 +45,14 @@ export function getCurrentUser(): string | null {
 
 export function setCurrentUser(username: string): void {
   sessionStorage.setItem(CURRENT_USER_KEY, username)
+}
+
+export function getCurrentRole(): string | null {
+  return sessionStorage.getItem(CURRENT_ROLE_KEY)
+}
+
+export function setCurrentRole(role: string): void {
+  sessionStorage.setItem(CURRENT_ROLE_KEY, role)
 }
 
 async function parseError(res: Response): Promise<string> {
@@ -101,9 +111,18 @@ export async function apiDelete(path: string): Promise<void> {
   }
 }
 
+/** 供 <video src> 使用：带 token 查询参数，可边播边拖 */
+export function mediaStreamUrl(blobKey: string): string {
+  const token = getToken()
+  const q = token ? `?token=${encodeURIComponent(token)}` : ''
+  return `/api/media/${blobKey}${q}`
+}
+
 export async function verifySession(): Promise<boolean> {
   try {
-    await apiJson('/api/auth/me')
+    const me = await apiJson<{ username: string; role: string }>('/api/auth/me')
+    setCurrentUser(me.username)
+    setCurrentRole(me.role)
     return true
   } catch {
     setAuthenticated(false)
@@ -119,7 +138,7 @@ interface LoginResponse {
 export async function loginApi(
   username: string,
   password: string,
-): Promise<{ ok: true; username: string } | { ok: false; message: string }> {
+): Promise<{ ok: true; username: string; role: string } | { ok: false; message: string }> {
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -136,7 +155,8 @@ export async function loginApi(
     setToken(data.token)
     setAuthenticated(true)
     setCurrentUser(data.user.username)
-    return { ok: true, username: data.user.username }
+    setCurrentRole(data.user.role)
+    return { ok: true, username: data.user.username, role: data.user.role }
   } catch {
     return { ok: false, message: '无法连接服务器，请确认后端已启动' }
   }

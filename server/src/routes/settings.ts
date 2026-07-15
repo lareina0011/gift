@@ -1,13 +1,14 @@
 import fs from 'node:fs'
 import { Router } from 'express'
 import multer from 'multer'
+import { isValidStageId } from '../config.js'
 import {
   deleteMediaByKey,
   generateId,
   getSettingMedia,
   replaceSettingMedia,
 } from '../db.js'
-import { optionalAuth, requireAuth } from '../middleware/auth.js'
+import { optionalAuth, requireAuth, requireEditor } from '../middleware/auth.js'
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
@@ -37,8 +38,8 @@ router.get('/background/:type', optionalAuth, (req, res) => {
   sendSettingMedia(res, 'background', type, null)
 })
 
-router.put('/background/:type', requireAuth, upload.single('file'), handleBackgroundUpload)
-router.post('/background/:type', requireAuth, upload.single('file'), handleBackgroundUpload)
+router.put('/background/:type', requireEditor, upload.single('file'), handleBackgroundUpload)
+router.post('/background/:type', requireEditor, upload.single('file'), handleBackgroundUpload)
 
 function handleBackgroundUpload(req: import('express').Request, res: import('express').Response): void {
   const type = req.params.type
@@ -56,7 +57,7 @@ function handleBackgroundUpload(req: import('express').Request, res: import('exp
   res.json({ blobKey })
 }
 
-router.delete('/background/:type', requireAuth, (req, res) => {
+router.delete('/background/:type', requireEditor, (req, res) => {
   const type = req.params.type
   if (type !== 'login' && type !== 'hero') {
     res.status(400).json({ error: '无效类型' })
@@ -76,8 +77,8 @@ router.get('/intro/:type', optionalAuth, (req, res) => {
   sendSettingMedia(res, 'intro', type, null)
 })
 
-router.put('/intro/:type', requireAuth, upload.single('file'), handleIntroUpload)
-router.post('/intro/:type', requireAuth, upload.single('file'), handleIntroUpload)
+router.put('/intro/:type', requireEditor, upload.single('file'), handleIntroUpload)
+router.post('/intro/:type', requireEditor, upload.single('file'), handleIntroUpload)
 
 function handleIntroUpload(req: import('express').Request, res: import('express').Response): void {
   const type = req.params.type
@@ -95,7 +96,7 @@ function handleIntroUpload(req: import('express').Request, res: import('express'
   res.json({ blobKey })
 }
 
-router.delete('/intro/:type', requireAuth, (req, res) => {
+router.delete('/intro/:type', requireEditor, (req, res) => {
   const type = req.params.type
   if (type !== 'image' && type !== 'audio') {
     res.status(400).json({ error: '无效类型' })
@@ -127,6 +128,144 @@ function handleAvatarUpload(req: import('express').Request, res: import('express
 
 router.delete('/avatar', requireAuth, (req, res) => {
   const media = getSettingMedia('avatar', 'avatar', req.user!.username)
+  if (media) deleteMediaByKey(media.blob_key)
+  res.json({ ok: true })
+})
+
+router.get('/stage-bg/:stageId', optionalAuth, (req, res) => {
+  const stageId = String(req.params.stageId)
+  if (!isValidStageId(stageId)) {
+    res.status(400).json({ error: '无效阶段' })
+    return
+  }
+  sendSettingMedia(res, 'stage_bg', stageId, null)
+})
+
+router.put('/stage-bg/:stageId', requireEditor, upload.single('file'), handleStageBgUpload)
+router.post('/stage-bg/:stageId', requireEditor, upload.single('file'), handleStageBgUpload)
+
+function handleStageBgUpload(req: import('express').Request, res: import('express').Response): void {
+  const stageId = String(req.params.stageId)
+  if (!isValidStageId(stageId)) {
+    res.status(400).json({ error: '无效阶段' })
+    return
+  }
+  if (!req.file) {
+    res.status(400).json({ error: '请上传文件' })
+    return
+  }
+  if (!req.file.mimetype.startsWith('image/')) {
+    res.status(400).json({ error: '仅支持图片' })
+    return
+  }
+  const blobKey = generateId()
+  replaceSettingMedia(
+    'stage_bg',
+    stageId,
+    null,
+    blobKey,
+    req.file.originalname,
+    req.file.mimetype,
+    req.file.buffer,
+  )
+  res.json({ blobKey })
+}
+
+router.delete('/stage-bg/:stageId', requireEditor, (req, res) => {
+  const stageId = String(req.params.stageId)
+  if (!isValidStageId(stageId)) {
+    res.status(400).json({ error: '无效阶段' })
+    return
+  }
+  const media = getSettingMedia('stage_bg', stageId, null)
+  if (media) deleteMediaByKey(media.blob_key)
+  res.json({ ok: true })
+})
+
+router.get('/stage-icon/:stageId', optionalAuth, (req, res) => {
+  const stageId = String(req.params.stageId)
+  if (!isValidStageId(stageId)) {
+    res.status(400).json({ error: '无效阶段' })
+    return
+  }
+  sendSettingMedia(res, 'stage_icon', stageId, null)
+})
+
+router.put('/stage-icon/:stageId', requireEditor, upload.single('file'), handleStageIconUpload)
+router.post('/stage-icon/:stageId', requireEditor, upload.single('file'), handleStageIconUpload)
+
+function handleStageIconUpload(
+  req: import('express').Request,
+  res: import('express').Response,
+): void {
+  const stageId = String(req.params.stageId)
+  if (!isValidStageId(stageId)) {
+    res.status(400).json({ error: '无效阶段' })
+    return
+  }
+  if (!req.file) {
+    res.status(400).json({ error: '请上传文件' })
+    return
+  }
+  if (!req.file.mimetype.startsWith('image/')) {
+    res.status(400).json({ error: '仅支持图片' })
+    return
+  }
+  const blobKey = generateId()
+  replaceSettingMedia(
+    'stage_icon',
+    stageId,
+    null,
+    blobKey,
+    req.file.originalname,
+    req.file.mimetype,
+    req.file.buffer,
+  )
+  res.json({ blobKey })
+}
+
+router.delete('/stage-icon/:stageId', requireEditor, (req, res) => {
+  const stageId = String(req.params.stageId)
+  if (!isValidStageId(stageId)) {
+    res.status(400).json({ error: '无效阶段' })
+    return
+  }
+  const media = getSettingMedia('stage_icon', stageId, null)
+  if (media) deleteMediaByKey(media.blob_key)
+  res.json({ ok: true })
+})
+
+router.get('/bgm', optionalAuth, (_req, res) => {
+  sendSettingMedia(res, 'bgm', 'bgm', null)
+})
+
+router.put('/bgm', requireEditor, upload.single('file'), handleBgmUpload)
+router.post('/bgm', requireEditor, upload.single('file'), handleBgmUpload)
+
+function handleBgmUpload(req: import('express').Request, res: import('express').Response): void {
+  if (!req.file) {
+    res.status(400).json({ error: '请上传音频文件' })
+    return
+  }
+  if (!req.file.mimetype.startsWith('audio/')) {
+    res.status(400).json({ error: '仅支持音频文件' })
+    return
+  }
+  const blobKey = generateId()
+  replaceSettingMedia(
+    'bgm',
+    'bgm',
+    null,
+    blobKey,
+    req.file.originalname,
+    req.file.mimetype,
+    req.file.buffer,
+  )
+  res.json({ blobKey })
+}
+
+router.delete('/bgm', requireEditor, (_req, res) => {
+  const media = getSettingMedia('bgm', 'bgm', null)
   if (media) deleteMediaByKey(media.blob_key)
   res.json({ ok: true })
 })

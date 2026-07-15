@@ -8,15 +8,17 @@ interface StageTabsProps {
   activeStage: StageId
   onChange: (id: StageId) => void
   memoryCounts: Record<StageId, number>
+  iconUrls?: Partial<Record<StageId, string>>
 }
 
-export function StageTabs({ activeStage, onChange, memoryCounts }: StageTabsProps) {
+export function StageTabs({ activeStage, onChange, memoryCounts, iconUrls }: StageTabsProps) {
   return (
     <nav className="flex w-full gap-1">
       {STAGES.map((stage) => {
         const active = activeStage === stage.id
         const count = memoryCounts[stage.id] ?? 0
-        const icon = getStageIcon(stage.id)
+        const base = getStageIcon(stage.id)
+        const icon = { ...base, customSrc: iconUrls?.[stage.id] ?? base.customSrc }
 
         return (
           <button

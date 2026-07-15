@@ -1,47 +1,77 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Calendar, ImagePlus, PenLine, Upload, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { mediaStreamUrl } from '../api/client'
+import type { MediaItem, Memory } from '../types'
+
+interface MemoryFormData {
+  title: string
+  content: string
+  date: string
+  files: File[]
+  removeMediaIds: string[]
+  unlockAt: string | null
+}
 
 interface AddMemoryModalProps {
   open: boolean
   stageLabel: string
+  initialMemory?: Memory | null
   onClose: () => void
-  onSubmit: (data: {
-    title: string
-    content: string
-    date: string
-    files: File[]
-  }) => Promise<void>
+  onSubmit: (data: MemoryFormData) => Promise<void>
 }
 
 export function AddMemoryModal({
   open,
   stageLabel,
+  initialMemory = null,
   onClose,
   onSubmit,
 }: AddMemoryModalProps) {
+  const isEdit = !!initialMemory
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [existingMedia, setExistingMedia] = useState<MediaItem[]>([])
+  const [removeMediaIds, setRemoveMediaIds] = useState<string[]>([])
+  const [unlockAt, setUnlockAt] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const reset = () => {
-    setTitle('')
-    setContent('')
-    setDate(new Date().toISOString().slice(0, 10))
+  useEffect(() => {
+    if (!open) return
+    if (initialMemory) {
+      setTitle(initialMemory.title)
+      setContent(initialMemory.content)
+      setDate(initialMemory.date)
+      setExistingMedia(initialMemory.media)
+      setRemoveMediaIds([])
+      setUnlockAt(initialMemory.unlockAt ?? '')
+    } else {
+      setTitle('')
+      setContent('')
+      setDate(new Date().toISOString().slice(0, 10))
+      setExistingMedia([])
+      setRemoveMediaIds([])
+      setUnlockAt('')
+    }
+    setFiles([])
+    setPreviews([])
+    setFocusedField(null)
+    setSubmitting(false)
+  }, [open, initialMemory])
+
+  const resetFiles = () => {
     previews.forEach((p) => URL.revokeObjectURL(p))
     setFiles([])
     setPreviews([])
-    setSubmitting(false)
-    setFocusedField(null)
   }
 
   const handleClose = () => {
-    reset()
+    resetFiles()
     onClose()
   }
 
@@ -49,10 +79,7 @@ export function AddMemoryModal({
     if (!selected) return
     const newFiles = Array.from(selected)
     setFiles((prev) => [...prev, ...newFiles])
-    setPreviews((prev) => [
-      ...prev,
-      ...newFiles.map((f) => URL.createObjectURL(f)),
-    ])
+    setPreviews((prev) => [...prev, ...newFiles.map((f) => URL.createObjectURL(f))])
   }
 
   const removeFile = (index: number) => {
@@ -61,12 +88,24 @@ export function AddMemoryModal({
     setPreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const removeExisting = (mediaId: string) => {
+    setExistingMedia((prev) => prev.filter((m) => m.id !== mediaId))
+    setRemoveMediaIds((prev) => [...prev, mediaId])
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
     setSubmitting(true)
     try {
-      await onSubmit({ title: title.trim(), content: content.trim(), date, files })
+      await onSubmit({
+        title: title.trim(),
+        content: content.trim(),
+        date,
+        files,
+        removeMediaIds,
+        unlockAt: unlockAt.trim() || null,
+      })
       handleClose()
     } finally {
       setSubmitting(false)
@@ -99,16 +138,14 @@ export function AddMemoryModal({
                 className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-fuchsia-500/10 blur-3xl"
                 aria-hidden
               />
-              <div
-                className="pointer-events-none absolute -bottom-16 -left-10 h-28 w-28 rounded-full bg-violet-500/10 blur-3xl"
-                aria-hidden
-              />
 
               <div className="relative mb-7 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[10px] tracking-[0.28em] text-white/35">NEW MEMORY</p>
+                  <p className="text-[10px] tracking-[0.28em] text-white/35">
+                    {isEdit ? 'EDIT MEMORY' : 'NEW MEMORY'}
+                  </p>
                   <h2 className="mt-2 font-serif text-2xl font-bold text-white">
-                    记录一段回忆
+                    {isEdit ? '编辑回忆' : '记录一段回忆'}
                   </h2>
                   <p className="mt-1.5 text-sm text-white/40">{stageLabel}阶段</p>
                 </div>
@@ -159,6 +196,26 @@ export function AddMemoryModal({
 
                 <div>
                   <label className="mb-2 block text-[11px] font-medium tracking-[0.18em] text-white/35">
+                    时间胶囊（可选）
+                  </label>
+                  <div className={fieldClass('unlock')}>
+                    <Calendar className="login-input-icon h-4 w-4" />
+                    <input
+                      type="date"
+                      value={unlockAt}
+                      onChange={(e) => setUnlockAt(e.target.value)}
+                      onFocus={() => setFocusedField('unlock')}
+                      onBlur={() => setFocusedField(null)}
+                      className="login-input"
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-white/25">
+                    设置后，对方在该日期前只能看到标题，正文与媒体会锁定
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-[11px] font-medium tracking-[0.18em] text-white/35">
                     故事
                   </label>
                   <div className={`${fieldClass('content')} items-start`}>
@@ -192,24 +249,46 @@ export function AddMemoryModal({
                     className="memory-upload-zone flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/12 bg-white/[0.02] py-8 text-white/35 transition hover:border-fuchsia-400/35 hover:bg-white/[0.04] hover:text-white/55"
                   >
                     <Upload className="h-5 w-5" />
-                    <span className="text-sm">点击上传图片或视频</span>
+                    <span className="text-sm">{isEdit ? '继续添加图片或视频' : '点击上传图片或视频'}</span>
                   </button>
 
-                  {previews.length > 0 && (
+                  {(existingMedia.length > 0 || previews.length > 0) && (
                     <div className="mt-3 grid grid-cols-4 gap-2">
-                      {previews.map((preview, i) => (
-                        <div key={preview} className="group relative aspect-square overflow-hidden rounded-lg border border-white/10">
-                          {files[i]?.type.startsWith('video/') ? (
+                      {existingMedia.map((item) => (
+                        <div
+                          key={item.id}
+                          className="group relative aspect-square overflow-hidden rounded-lg border border-white/10"
+                        >
+                          {item.type === 'video' ? (
                             <video
-                              src={preview}
+                              src={mediaStreamUrl(item.blobKey)}
                               className="h-full w-full object-cover"
                             />
                           ) : (
                             <img
-                              src={preview}
+                              src={mediaStreamUrl(item.blobKey)}
                               alt=""
                               className="h-full w-full object-cover"
                             />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeExisting(item.id)}
+                            className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white/80 opacity-0 backdrop-blur-sm transition group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      {previews.map((preview, i) => (
+                        <div
+                          key={preview}
+                          className="group relative aspect-square overflow-hidden rounded-lg border border-white/10"
+                        >
+                          {files[i]?.type.startsWith('video/') ? (
+                            <video src={preview} className="h-full w-full object-cover" />
+                          ) : (
+                            <img src={preview} alt="" className="h-full w-full object-cover" />
                           )}
                           <button
                             type="button"
@@ -233,7 +312,7 @@ export function AddMemoryModal({
                 >
                   <ImagePlus className="relative z-10 h-4 w-4" />
                   <span className="relative z-10">
-                    {submitting ? '保存中...' : '保存回忆'}
+                    {submitting ? '保存中...' : isEdit ? '保存修改' : '保存回忆'}
                   </span>
                 </motion.button>
               </form>

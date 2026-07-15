@@ -3,6 +3,8 @@ import express from 'express'
 import { initDb } from './db.js'
 import { PORT } from './config.js'
 import authRoutes from './routes/auth.js'
+import blessingsRoutes from './routes/blessings.js'
+import letterRoutes from './routes/letter.js'
 import memoriesRoutes from './routes/memories.js'
 import wishesRoutes from './routes/wishes.js'
 import mediaRoutes from './routes/media.js'
@@ -22,6 +24,8 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/memories', memoriesRoutes)
 app.use('/api/wishes', wishesRoutes)
+app.use('/api/blessings', blessingsRoutes)
+app.use('/api/letter', letterRoutes)
 app.use('/api/media', mediaRoutes)
 app.use('/api/settings', settingsRoutes)
 

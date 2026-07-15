@@ -36,8 +36,41 @@ router.post('/', requireAuth, (req, res) => {
   res.status(201).json({ id, text: text.trim(), emoji, createdAt })
 })
 
+router.patch('/:id', requireAuth, (req, res) => {
+  const id = String(req.params.id)
+  const existing = getDb()
+    .prepare('SELECT * FROM wishes WHERE id = ?')
+    .get(id) as { id: string; text: string; emoji: string; created_at: string } | undefined
+
+  if (!existing) {
+    res.status(404).json({ error: '愿望不存在' })
+    return
+  }
+
+  const text =
+    typeof req.body.text === 'string' ? req.body.text.trim() : existing.text
+  const emoji =
+    typeof req.body.emoji === 'string' && req.body.emoji
+      ? req.body.emoji
+      : existing.emoji
+
+  if (!text) {
+    res.status(400).json({ error: '愿望内容不能为空' })
+    return
+  }
+
+  getDb().prepare('UPDATE wishes SET text = ?, emoji = ? WHERE id = ?').run(text, emoji, id)
+
+  res.json({
+    id: existing.id,
+    text,
+    emoji,
+    createdAt: existing.created_at,
+  })
+})
+
 router.delete('/:id', requireAuth, (req, res) => {
-  const result = getDb().prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id)
+  const result = getDb().prepare('DELETE FROM wishes WHERE id = ?').run(String(req.params.id))
   if (result.changes === 0) {
     res.status(404).json({ error: '愿望不存在' })
     return

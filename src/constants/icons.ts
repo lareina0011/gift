@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  BookMarked,
   BookOpen,
-  FlaskConical,
   GraduationCap,
   Pencil,
   Sparkles,
@@ -21,7 +21,7 @@ export const STAGE_ICONS: Record<StageId, IconConfig> = {
   middle: { emoji: '📚', customSrc: null, lucide: BookOpen },
   high: { emoji: '✏️', customSrc: null, lucide: Pencil },
   college: { emoji: '🎓', customSrc: null, lucide: GraduationCap },
-  graduate: { emoji: '🔬', customSrc: null, lucide: FlaskConical },
+  graduate: { emoji: '📖', customSrc: null, lucide: BookMarked },
   future: { emoji: '🌟', customSrc: null, lucide: Sparkles },
 }
 

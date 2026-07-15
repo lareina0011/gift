@@ -38,12 +38,26 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   const header = req.headers.authorization
-  if (header?.startsWith('Bearer ')) {
+  const queryToken = typeof req.query.token === 'string' ? req.query.token : null
+  const raw = header?.startsWith('Bearer ') ? header.slice(7) : queryToken
+
+  if (raw) {
     try {
-      req.user = jwt.verify(header.slice(7), JWT_SECRET) as AuthPayload
+      req.user = jwt.verify(raw, JWT_SECRET) as AuthPayload
     } catch {
       // ignore invalid token
     }
   }
   next()
+}
+
+/** 仅开发账号（lareina / editor）可写内容 */
+export function requireEditor(req: Request, res: Response, next: NextFunction): void {
+  requireAuth(req, res, () => {
+    if (req.user?.role !== 'editor') {
+      res.status(403).json({ error: '仅开发账号可进行此操作' })
+      return
+    }
+    next()
+  })
 }

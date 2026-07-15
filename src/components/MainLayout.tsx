@@ -1,11 +1,20 @@
-import { LogOut, User } from 'lucide-react'
+import { LogOut, Mail, User } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { APP_CONFIG } from '../constants/config'
+import { getStageBackground } from '../constants/stageBackgrounds'
 import { STAGES } from '../constants/stages'
 import { useBackgroundImages } from '../hooks/useBackgroundImages'
+import { useBgm } from '../hooks/useBgm'
 import { useIntroMedia } from '../hooks/useIntroMedia'
+import { useLetter } from '../hooks/useLetter'
 import { useMemories } from '../hooks/useMemories'
 import { useProfileAvatar } from '../hooks/useProfileAvatar'
+import { useStageAssets } from '../hooks/useStageAssets'
+import { useStageBlessings } from '../hooks/useStageBlessings'
+import {
+  hasPlayedBlessingThisSession,
+  markBlessingPlayedThisSession,
+} from '../utils/blessingSession'
 import { hasPlayedIntroThisSession } from '../utils/introMedia'
 import {
   hasSeenWelcome,
@@ -14,14 +23,18 @@ import {
   markWelcomeUserThisSession,
 } from '../utils/storage'
 import type { StageId } from '../types'
+import { BgmControl } from './BgmControl'
 import { DesignCredit } from './DesignCredit'
 import { HeroCover } from './HeroCover'
+import { LetterPanel } from './LetterPanel'
 import { LoginIntroOverlay } from './LoginIntroOverlay'
 import { MemoryOrbitGallery } from './MemoryOrbitGallery'
 import { ProfilePanel } from './ProfilePanel'
 import { ProgressBar } from './ProgressBar'
 import { StageBento } from './StageBento'
+import { StageBlessingPlayer } from './StageBlessingPlayer'
 import { ScrollUnrollSection } from './ScrollUnrollSection'
+import { ShareCardModal } from './ShareCardModal'
 import { StageContent } from './StageContent'
 import { StageTabs } from './StageTabs'
 import { StageTransition } from './StageTransition'
@@ -30,6 +43,7 @@ import { WelcomeUserOverlay } from './WelcomeUserOverlay'
 
 interface MainLayoutProps {
   currentUser: string
+  isEditor: boolean
   onLogout: () => void
   onChangePassword: (
     oldPassword: string,
@@ -39,28 +53,71 @@ interface MainLayoutProps {
 
 export function MainLayout({
   currentUser,
+  isEditor,
   onLogout,
   onChangePassword,
 }: MainLayoutProps) {
   const [activeStage, setActiveStage] = useState<StageId>('primary')
   const [transitionTarget, setTransitionTarget] = useState<StageId | null>(null)
+  const [blessingTarget, setBlessingTarget] = useState<StageId | null>(null)
   const [showProfile, setShowProfile] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
   const [showWelcomeUser, setShowWelcomeUser] = useState(false)
   const [showIntro, setShowIntro] = useState(false)
+  const [showLetter, setShowLetter] = useState(false)
+  const [showShareCard, setShowShareCard] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
   const {
     ready,
+    error: dataError,
     memories,
     wishes,
+    reload,
     addMemory,
+    editMemory,
     deleteMemory,
     addWish,
+    editWish,
     deleteWish,
     getMemoriesByStage,
     getMemoryCount,
   } = useMemories()
+
+  const {
+    ready: blessingsReady,
+    blessings,
+    getByStage,
+    addBlessing,
+    deleteBlessing,
+  } = useStageBlessings()
+
+  const { ready: letterReady, letter, saveLetter, addVoice, removeVoice } = useLetter()
+  const {
+    ready: stageAssetsReady,
+    bgUrls,
+    iconUrls,
+    uploadStageBg,
+    removeStageBg,
+    uploadStageIcon,
+    removeStageIcon,
+  } = useStageAssets()
+
+  const {
+    ready: bgmReady,
+    hasBgm,
+    url: bgmUrl,
+    playing: bgmPlaying,
+    enabled: bgmEnabled,
+    volume: bgmVolume,
+    audioRef: bgmAudioRef,
+    toggle: toggleBgm,
+    setVolume: setBgmVolume,
+    pauseForIntro,
+    resumeAfterIntro,
+    uploadBgm,
+    removeBgm,
+  } = useBgm()
 
   const {
     loginBgUrl,
@@ -93,8 +150,11 @@ export function MainLayout({
   } = useProfileAvatar(currentUser)
 
   useEffect(() => {
-    if (!ready || !introReady) return
+    if (!ready || !introReady || !blessingsReady || !letterReady || !stageAssetsReady || !bgmReady) {
+      return
+    }
     if (hasIntroMedia && !hasPlayedIntroThisSession()) {
+      pauseForIntro()
       setShowIntro(true)
       return
     }
@@ -103,12 +163,22 @@ export function MainLayout({
     } else if (!hasSeenWelcome()) {
       setShowWelcome(true)
     }
-  }, [ready, introReady, hasIntroMedia])
+  }, [
+    ready,
+    introReady,
+    blessingsReady,
+    letterReady,
+    stageAssetsReady,
+    bgmReady,
+    hasIntroMedia,
+    pauseForIntro,
+  ])
 
   const handleIntroComplete = useCallback(() => {
     setShowIntro(false)
+    resumeAfterIntro()
     setShowWelcomeUser(true)
-  }, [])
+  }, [resumeAfterIntro])
 
   const handleWelcomeUserComplete = useCallback(() => {
     markWelcomeUserThisSession()
@@ -127,26 +197,51 @@ export function MainLayout({
   }, [getMemoryCount])
 
   const stageMemories = getMemoriesByStage(activeStage)
+  const pageBackground =
+    bgUrls[activeStage] ??
+    getStageBackground(activeStage) ??
+    heroCoverUrl ??
+    defaultHeroUrl
+
+  const enterStage = useCallback(
+    (id: StageId) => {
+      const list = getByStage(id)
+      if (list.length > 0 && !hasPlayedBlessingThisSession(id)) {
+        setBlessingTarget(id)
+        return
+      }
+      setActiveStage(id)
+    },
+    [getByStage],
+  )
 
   const handleTransitionComplete = useCallback(() => {
-    if (transitionTarget) {
-      setActiveStage(transitionTarget)
-      setTransitionTarget(null)
-    }
-  }, [transitionTarget])
+    if (!transitionTarget) return
+    const target = transitionTarget
+    setTransitionTarget(null)
+    enterStage(target)
+  }, [transitionTarget, enterStage])
+
+  const handleBlessingComplete = useCallback(() => {
+    if (!blessingTarget) return
+    markBlessingPlayedThisSession(blessingTarget)
+    setActiveStage(blessingTarget)
+    setBlessingTarget(null)
+  }, [blessingTarget])
 
   const handleStageChange = useCallback(
     (id: StageId, skipTransition = false) => {
-      if (id === activeStage && !transitionTarget) return
+      if (id === activeStage && !transitionTarget && !blessingTarget) return
       setShowProfile(false)
-      if (skipTransition || transitionTarget) {
+      if (skipTransition || transitionTarget || blessingTarget) {
         setTransitionTarget(null)
+        setBlessingTarget(null)
         setActiveStage(id)
         return
       }
       setTransitionTarget(id)
     },
-    [activeStage, transitionTarget],
+    [activeStage, transitionTarget, blessingTarget],
   )
 
   const scrollToContent = () => {
@@ -158,7 +253,7 @@ export function MainLayout({
     setShowWelcome(false)
   }
 
-  if (!ready || !introReady) {
+  if (!ready || !introReady || !blessingsReady || !letterReady || !stageAssetsReady || !bgmReady) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
         <p className="text-sm tracking-widest text-white/40">加载中...</p>
@@ -166,20 +261,52 @@ export function MainLayout({
     )
   }
 
+  if (dataError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0a0a0a] px-6 text-center">
+        <p className="text-sm text-white/50">内容加载失败</p>
+        <p className="max-w-sm text-xs leading-relaxed text-white/30">{dataError}</p>
+        <button
+          type="button"
+          onClick={() => reload()}
+          className="rounded-lg bg-white px-5 py-2.5 text-xs font-semibold tracking-wider text-black"
+        >
+          重试
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="relative min-h-screen text-white">
       <div
-        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroCoverUrl ?? defaultHeroUrl})` }}
+        key={pageBackground}
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat transition-[opacity,filter] duration-700"
+        style={{ backgroundImage: `url(${pageBackground})` }}
       />
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[#0a0a0a]/40" />
 
       <header className="fixed left-0 right-0 top-0 z-50">
         <div className="page-shell flex items-center justify-between py-5">
-          <span className="font-serif text-sm font-semibold tracking-wide text-white/90 sm:text-base">
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={() => setShowProfile(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setShowProfile(false)
+            }}
+            className="cursor-pointer font-serif text-sm font-semibold tracking-wide text-white/90 transition hover:text-white sm:text-base"
+          >
             {APP_CONFIG.siteTitle}
           </span>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowLetter(true)}
+              className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs tracking-wider text-white/50 transition hover:text-white"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              一封信
+            </button>
             <button
               onClick={() => setShowProfile(true)}
               className={`flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs tracking-wider transition ${
@@ -208,9 +335,17 @@ export function MainLayout({
         onComplete={handleTransitionComplete}
       />
 
+      <StageBlessingPlayer
+        stageId={blessingTarget}
+        blessings={blessingTarget ? getByStage(blessingTarget) : []}
+        onComplete={handleBlessingComplete}
+      />
+
       {showProfile ? (
         <ProfilePanel
           username={currentUser}
+          isEditor={isEditor}
+          onBack={() => setShowProfile(false)}
           avatarUrl={avatarUrl}
           hasCustomAvatar={hasCustomAvatar}
           uploadAvatar={uploadAvatar}
@@ -229,6 +364,23 @@ export function MainLayout({
           defaultIntroAudioUrl={defaultIntroAudioUrl}
           uploadIntroMedia={uploadIntroMedia}
           removeIntroMedia={removeIntroMedia}
+          blessings={blessings}
+          onAddBlessing={addBlessing}
+          onDeleteBlessing={deleteBlessing}
+          letter={letter}
+          onSaveLetter={saveLetter}
+          onAddLetterVoice={addVoice}
+          onRemoveLetterVoice={removeVoice}
+          stageBgUrls={bgUrls}
+          stageIconUrls={iconUrls}
+          onUploadStageBg={uploadStageBg}
+          onRemoveStageBg={removeStageBg}
+          onUploadStageIcon={uploadStageIcon}
+          onRemoveStageIcon={removeStageIcon}
+          hasBgm={hasBgm}
+          bgmUrl={bgmUrl}
+          onUploadBgm={uploadBgm}
+          onRemoveBgm={removeBgm}
         />
       ) : (
         <>
@@ -239,6 +391,8 @@ export function MainLayout({
               handleStageChange('future')
               setTimeout(scrollToContent, 100)
             }}
+            onOpenLetter={() => setShowLetter(true)}
+            onShareCard={() => setShowShareCard(true)}
           />
 
           <ScrollUnrollSection triggerRef={heroRef}>
@@ -258,6 +412,7 @@ export function MainLayout({
                   activeStage={activeStage}
                   onChange={handleStageChange}
                   memoryCounts={memoryCounts}
+                  iconUrls={iconUrls}
                 />
               </div>
             </div>
@@ -266,11 +421,17 @@ export function MainLayout({
               stageId={activeStage}
               memories={stageMemories}
               wishes={wishes}
+              isEditor={isEditor}
+              stageIconUrl={iconUrls[activeStage] ?? null}
               onAddMemory={async (data) => {
                 await addMemory(activeStage, data)
               }}
+              onEditMemory={async (id, data) => {
+                await editMemory(id, data)
+              }}
               onDeleteMemory={deleteMemory}
               onAddWish={addWish}
+              onEditWish={editWish}
               onDeleteWish={deleteWish}
             />
 
@@ -297,6 +458,19 @@ export function MainLayout({
       />
 
       <WelcomeOverlay open={showWelcome} onClose={handleWelcomeClose} />
+
+      <LetterPanel open={showLetter} letter={letter} onClose={() => setShowLetter(false)} />
+      <ShareCardModal open={showShareCard} onClose={() => setShowShareCard(false)} />
+
+      <BgmControl
+        hasBgm={hasBgm}
+        enabled={bgmEnabled}
+        playing={bgmPlaying}
+        volume={bgmVolume}
+        onToggle={toggleBgm}
+        onVolume={setBgmVolume}
+        audioRef={bgmAudioRef}
+      />
 
       <DesignCredit />
     </div>

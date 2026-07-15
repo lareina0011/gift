@@ -7,10 +7,12 @@ import { BlurText } from './reactbits'
 interface HeroCoverProps {
   onExplore: () => void
   onFuture: () => void
+  onOpenLetter: () => void
+  onShareCard: () => void
 }
 
 export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCover(
-  { onExplore, onFuture },
+  { onExplore, onFuture, onOpenLetter, onShareCard },
   ref,
 ) {
   const { hero } = APP_CONFIG
@@ -82,6 +84,22 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
             className="rounded-sm border border-white/30 px-7 py-3.5 text-sm font-semibold tracking-[0.12em] text-white transition hover:border-white/60 hover:bg-white/5"
           >
             {hero.futureText.toUpperCase()}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onOpenLetter}
+            className="rounded-sm border border-white/20 px-7 py-3.5 text-sm font-semibold tracking-[0.12em] text-white/85 transition hover:border-white/50 hover:bg-white/5"
+          >
+            一封信
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onShareCard}
+            className="rounded-sm border border-white/20 px-7 py-3.5 text-sm font-semibold tracking-[0.12em] text-white/85 transition hover:border-white/50 hover:bg-white/5"
+          >
+            纪念卡
           </motion.button>
         </motion.div>
 

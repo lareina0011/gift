@@ -7,6 +7,8 @@ import {
   deleteWishApi,
   fetchMemories,
   fetchWishes,
+  updateMemory,
+  updateWishApi,
 } from '../api/data'
 
 export function useMemories() {
@@ -14,6 +16,20 @@ export function useMemories() {
   const [wishes, setWishes] = useState<FutureWish[]>([])
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const reload = useCallback(async () => {
+    setError(null)
+    setReady(false)
+    try {
+      const [nextMemories, nextWishes] = await Promise.all([fetchMemories(), fetchWishes()])
+      setMemories(nextMemories)
+      setWishes(nextWishes)
+      setReady(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载失败')
+      setReady(true)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -39,10 +55,35 @@ export function useMemories() {
   const addMemory = useCallback(
     async (
       stageId: StageId,
-      data: { title: string; content: string; date: string; files: File[] },
+      data: {
+        title: string
+        content: string
+        date: string
+        files: File[]
+        unlockAt?: string | null
+      },
     ) => {
       const memory = await createMemory(stageId, data)
       setMemories((prev) => [memory, ...prev])
+      return memory
+    },
+    [],
+  )
+
+  const editMemory = useCallback(
+    async (
+      id: string,
+      data: {
+        title: string
+        content: string
+        date: string
+        files: File[]
+        removeMediaIds: string[]
+        unlockAt?: string | null
+      },
+    ) => {
+      const memory = await updateMemory(id, data)
+      setMemories((prev) => prev.map((m) => (m.id === id ? memory : m)))
       return memory
     },
     [],
@@ -56,6 +97,13 @@ export function useMemories() {
   const addWish = useCallback(async (text: string, emoji: string) => {
     const wish = await createWish(text, emoji)
     setWishes((prev) => [wish, ...prev])
+    return wish
+  }, [])
+
+  const editWish = useCallback(async (id: string, text: string, emoji: string) => {
+    const wish = await updateWishApi(id, text, emoji)
+    setWishes((prev) => prev.map((w) => (w.id === id ? wish : w)))
+    return wish
   }, [])
 
   const deleteWish = useCallback(async (id: string) => {
@@ -81,9 +129,12 @@ export function useMemories() {
     error,
     memories,
     wishes,
+    reload,
     addMemory,
+    editMemory,
     deleteMemory,
     addWish,
+    editWish,
     deleteWish,
     getMemoriesByStage,
     getMemoryCount,
