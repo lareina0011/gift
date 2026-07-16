@@ -5,7 +5,7 @@ import { STAGES } from '../constants/stages'
 import type { StageId } from '../types'
 
 interface StageTabsProps {
-  activeStage: StageId
+  activeStage: StageId | null
   onChange: (id: StageId) => void
   memoryCounts: Record<StageId, number>
   iconUrls?: Partial<Record<StageId, string>>
@@ -29,10 +29,10 @@ export function StageTabs({ activeStage, onChange, memoryCounts, iconUrls }: Sta
             <motion.div
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.97 }}
-              className={`flex flex-col items-center gap-0.5 rounded-sm px-1 py-2 transition sm:flex-row sm:justify-center sm:gap-1.5 sm:px-2 sm:py-2.5 ${
+              className={`flex flex-col items-center gap-0.5 rounded-sm border px-1 py-2 transition sm:flex-row sm:justify-center sm:gap-1.5 sm:px-2 sm:py-2.5 ${
                 active
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70'
+                  ? 'border-white/14 bg-transparent text-white'
+                  : 'border-transparent text-white/40 hover:border-white/10 hover:bg-transparent hover:text-white/70'
               }`}
             >
               <AppIcon

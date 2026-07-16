@@ -5,10 +5,11 @@ import { AppIcon } from './AppIcon'
 import { STAGES } from '../constants/stages'
 import { APP_CONFIG } from '../constants/config'
 import { CountUp } from './reactbits'
+import { ProgressRunner } from './ProgressRunner'
 import type { StageId } from '../types'
 
 interface ProgressBarProps {
-  activeStage: StageId
+  activeStage: StageId | null
   onStageChange: (id: StageId) => void
 }
 
@@ -29,13 +30,24 @@ function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value))
 }
 
+/** 将阶段进度映射为同一横坐标，并在 0%/100% 贴边避免出界 */
+function getProgressAnchorStyle(progress: number) {
+  if (progress <= 0) {
+    return { left: '0%', transform: 'translateX(0)' }
+  }
+  if (progress >= 100) {
+    return { left: '100%', transform: 'translateX(-100%)' }
+  }
+  return { left: `${progress}%`, transform: 'translateX(-50%)' }
+}
+
 export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragProgress, setDragProgress] = useState<number | null>(null)
 
-  const activeIndex = STAGES.findIndex((s) => s.id === activeStage)
-  const stageProgress = STAGES[activeIndex]?.progress ?? 0
+  const activeIndex = activeStage ? STAGES.findIndex((s) => s.id === activeStage) : -1
+  const stageProgress = activeIndex >= 0 ? (STAGES[activeIndex]?.progress ?? 0) : 0
   const displayProgress = dragProgress ?? stageProgress
 
   const progressFromClientX = useCallback((clientX: number) => {
@@ -77,11 +89,11 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
   }, [isDragging, finishDrag, progressFromClientX])
 
   const dragStageId = dragProgress !== null ? snapToStage(dragProgress) : activeStage
-  const dragIndex = STAGES.findIndex((s) => s.id === dragStageId)
+  const dragIndex = dragStageId ? STAGES.findIndex((s) => s.id === dragStageId) : -1
   const highlightIndex = isDragging ? dragIndex : activeIndex
 
   return (
-    <div className="border-t border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-md">
+    <div className="border-t glass-chrome">
       <div className="page-shell py-4">
         <div className="mb-3 flex items-center justify-between text-xs text-white/35">
           <span className="tracking-wider">{APP_CONFIG.progressLabel}</span>
@@ -89,7 +101,7 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
             {isDragging ? (
               <>{Math.round(displayProgress)}%</>
             ) : (
-              <CountUp key={activeStage} to={stageProgress} suffix="%" duration={0.6} />
+              <CountUp key={activeStage ?? 'none'} to={stageProgress} suffix="%" duration={0.6} />
             )}
             {isDragging && (
               <span className="ml-1.5 text-white/50">
@@ -106,7 +118,7 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
           aria-valuemax={100}
           aria-valuenow={Math.round(displayProgress)}
           aria-label="人生求学进度"
-          className={`relative h-8 touch-none select-none ${
+          className={`relative h-12 touch-none select-none sm:h-14 ${
             isDragging ? 'cursor-grabbing' : 'cursor-grab'
           }`}
           onPointerDown={(e) => {
@@ -124,37 +136,57 @@ export function ProgressBar({ activeStage, onStageChange }: ProgressBarProps) {
             />
           </div>
 
-          {STAGES.map((stage) => (
-            <div
-              key={stage.id}
-              className="pointer-events-none absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${stage.progress}%` }}
-            >
-              <div className="rounded-full bg-[#0a0a0a] p-0.5 ring-1 ring-white/20">
-                <AppIcon config={getStageIcon(stage.id)} size={12} className="text-white/60" />
+          {STAGES.map((stage) => {
+            const anchor = getProgressAnchorStyle(stage.progress)
+            return (
+              <div
+                key={stage.id}
+                className="pointer-events-none absolute top-1/2 z-10"
+                style={{
+                  left: anchor.left,
+                  transform: `${anchor.transform} translateY(-50%)`,
+                }}
+              >
+                <div className="rounded-full bg-[#0a0a0a] p-0.5 ring-1 ring-white/20">
+                  <AppIcon config={getStageIcon(stage.id)} size={12} className="text-white/60" />
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
-          <div
-            className={`pointer-events-none absolute top-1/2 z-20 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-white shadow-[0_0_12px_rgba(255,255,255,0.3)] ${
-              isDragging ? 'scale-125' : ''
-            }`}
-            style={{
-              left: `${displayProgress}%`,
-              transition: isDragging
-                ? 'none'
-                : 'left 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s',
-            }}
-          />
+          {(() => {
+            const anchor = getProgressAnchorStyle(displayProgress)
+            return (
+              <div
+                className="pointer-events-none absolute top-1/2 z-20"
+                style={{
+                  left: anchor.left,
+                  transform: `${anchor.transform} translateY(-50%)`,
+                  transition: isDragging
+                    ? 'none'
+                    : 'left 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <ProgressRunner isDragging={isDragging} />
+              </div>
+            )
+          })()}
         </div>
 
-        <div className="pointer-events-none mt-2 flex w-full">
+        <div className="pointer-events-none relative mt-2 h-11 w-full">
           {STAGES.map((stage, i) => {
-            const reached = i <= highlightIndex
+            const reached = highlightIndex >= 0 && i <= highlightIndex
             const active = (isDragging ? dragStageId : activeStage) === stage.id
+            const anchor = getProgressAnchorStyle(stage.progress)
             return (
-              <div key={stage.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+              <div
+                key={stage.id}
+                className="absolute top-0 flex max-w-[4.5rem] flex-col items-center gap-1"
+                style={{
+                  left: anchor.left,
+                  transform: anchor.transform,
+                }}
+              >
                 <motion.div
                   animate={{
                     scale: active ? 1.15 : 1,

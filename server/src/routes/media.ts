@@ -23,6 +23,11 @@ router.get('/:key', optionalAuth, (req, res) => {
     return
   }
 
+  if (media.category === 'memory' && media.owner && media.owner !== req.user?.username) {
+    res.status(403).json({ error: '无权访问' })
+    return
+  }
+
   const stat = fs.statSync(media.file_path)
   const range = req.headers.range
   res.setHeader('Content-Type', media.mime_type)

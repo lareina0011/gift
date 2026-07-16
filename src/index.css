@@ -85,8 +85,60 @@ html {
 }
 
 .scroll-paper {
-  background: rgb(10 10 10 / 0.72);
-  backdrop-filter: blur(12px);
+  background: transparent;
+}
+
+/* 内容区线框面板：只保留边框，不铺底色 */
+.glass-panel {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: transparent;
+}
+
+/* 吸顶条 / 底栏：同样以线条为主 */
+.glass-chrome {
+  border-color: rgb(255 255 255 / 0.1);
+  background: transparent;
+}
+
+/* 星轨展示区：局部衬底，避免底图干扰轨道与照片 */
+.orbit-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 1rem;
+  background:
+    radial-gradient(
+      ellipse 88% 78% at 50% 52%,
+      rgb(8 6 14 / 0.68) 0%,
+      rgb(8 6 14 / 0.38) 42%,
+      rgb(8 6 14 / 0.12) 68%,
+      transparent 100%
+    );
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+}
+
+.orbit-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(168 85 247 / 0.1) 0%, transparent 58%),
+    radial-gradient(circle at 18% 22%, rgb(139 92 246 / 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 82% 28%, rgb(217 70 239 / 0.05) 0%, transparent 32%);
+}
+
+.orbit-stage__inner {
+  position: relative;
+  z-index: 1;
+  padding: 1.25rem 0 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .orbit-stage__inner {
+    padding: 1.75rem 0 2rem;
+  }
 }
 
 /* Hero 星空 */

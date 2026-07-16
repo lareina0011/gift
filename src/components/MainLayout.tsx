@@ -1,7 +1,7 @@
 import { LogOut, Mail, User } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { APP_CONFIG } from '../constants/config'
-import { getStageBackground } from '../constants/stageBackgrounds'
+import { getStageBackground, getStageBackgroundStyle } from '../constants/stageBackgrounds'
 import { STAGES } from '../constants/stages'
 import { useBackgroundImages } from '../hooks/useBackgroundImages'
 import { useBgm } from '../hooks/useBgm'
@@ -57,7 +57,7 @@ export function MainLayout({
   onLogout,
   onChangePassword,
 }: MainLayoutProps) {
-  const [activeStage, setActiveStage] = useState<StageId>('primary')
+  const [activeStage, setActiveStage] = useState<StageId | null>(null)
   const [transitionTarget, setTransitionTarget] = useState<StageId | null>(null)
   const [blessingTarget, setBlessingTarget] = useState<StageId | null>(null)
   const [showProfile, setShowProfile] = useState(false)
@@ -196,12 +196,16 @@ export function MainLayout({
     return counts
   }, [getMemoryCount])
 
-  const stageMemories = getMemoriesByStage(activeStage)
-  const pageBackground =
-    bgUrls[activeStage] ??
-    getStageBackground(activeStage) ??
-    heroCoverUrl ??
-    defaultHeroUrl
+  const stageMemories = activeStage ? getMemoriesByStage(activeStage) : []
+  const pageBackground = activeStage
+    ? (bgUrls[activeStage] ??
+      getStageBackground(activeStage) ??
+      heroCoverUrl ??
+      defaultHeroUrl)
+    : (heroCoverUrl ?? defaultHeroUrl)
+  const pageBackgroundStyle = activeStage
+    ? getStageBackgroundStyle(activeStage)
+    : { fit: 'cover' as const, position: 'center center' }
 
   const enterStage = useCallback(
     (id: StageId) => {
@@ -279,12 +283,17 @@ export function MainLayout({
 
   return (
     <div className="relative min-h-screen text-white">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[#0a0a0a]" />
       <div
         key={pageBackground}
-        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat transition-[opacity,filter] duration-700"
-        style={{ backgroundImage: `url(${pageBackground})` }}
+        className="pointer-events-none fixed inset-0 -z-10 bg-no-repeat transition-[opacity,filter] duration-700"
+        style={{
+          backgroundImage: `url(${pageBackground})`,
+          backgroundSize: pageBackgroundStyle.fit,
+          backgroundPosition: pageBackgroundStyle.position ?? 'center center',
+        }}
       />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[#0a0a0a]/40" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[#0a0a0a]/10" />
 
       <header className="fixed left-0 right-0 top-0 z-50">
         <div className="page-shell flex items-center justify-between py-5">
@@ -331,7 +340,7 @@ export function MainLayout({
 
       <StageTransition
         targetStage={transitionTarget}
-        fromStage={activeStage}
+        fromStage={activeStage ?? transitionTarget ?? 'primary'}
         onComplete={handleTransitionComplete}
       />
 
@@ -386,6 +395,7 @@ export function MainLayout({
         <>
           <HeroCover
             ref={heroRef}
+            stageId={activeStage}
             onExplore={scrollToContent}
             onFuture={() => {
               handleStageChange('future')
@@ -396,17 +406,10 @@ export function MainLayout({
           />
 
           <ScrollUnrollSection triggerRef={heroRef}>
-            <StageBento
-              activeStage={activeStage}
-              memoryCounts={memoryCounts}
-              onStageChange={(id) => {
-                handleStageChange(id)
-                scrollToContent()
-              }}
-            />
+            <StageBento activeStage={activeStage} />
 
             <div ref={contentRef} className="border-t border-white/[0.06]">
-            <div className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0a0a0a]/90 py-3 backdrop-blur-md">
+            <div className="sticky top-0 z-40 border-b glass-chrome py-3">
               <div className="page-shell">
                 <StageTabs
                   activeStage={activeStage}
@@ -417,25 +420,39 @@ export function MainLayout({
               </div>
             </div>
 
-            <StageContent
-              stageId={activeStage}
-              memories={stageMemories}
-              wishes={wishes}
-              isEditor={isEditor}
-              stageIconUrl={iconUrls[activeStage] ?? null}
+            {activeStage ? (
+              <StageContent
+                stageId={activeStage}
+                memories={stageMemories}
+                wishes={wishes}
+                stageIconUrl={iconUrls[activeStage] ?? null}
+                onAddMemory={async (data) => {
+                  await addMemory(activeStage, data)
+                }}
+                onEditMemory={async (id, data) => {
+                  await editMemory(id, data)
+                }}
+                onDeleteMemory={deleteMemory}
+                onAddWish={addWish}
+                onEditWish={editWish}
+                onDeleteWish={deleteWish}
+              />
+            ) : (
+              <div className="page-shell border-b border-white/[0.06] py-16 text-center">
+                <p className="text-sm text-white/35">
+                  在上方时光专辑中选择一个阶段，开始翻阅那一章故事
+                </p>
+              </div>
+            )}
+
+            <MemoryOrbitGallery
+              memories={memories}
+              canUpload={Boolean(activeStage)}
               onAddMemory={async (data) => {
+                if (!activeStage) return
                 await addMemory(activeStage, data)
               }}
-              onEditMemory={async (id, data) => {
-                await editMemory(id, data)
-              }}
-              onDeleteMemory={deleteMemory}
-              onAddWish={addWish}
-              onEditWish={editWish}
-              onDeleteWish={deleteWish}
             />
-
-            <MemoryOrbitGallery memories={memories} />
 
             <ProgressBar activeStage={activeStage} onStageChange={handleStageChange} />
             </div>

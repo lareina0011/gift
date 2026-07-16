@@ -31,6 +31,8 @@ type OrbitShape =
 
 interface OrbitImagesProps {
   images?: string[]
+  /** 自定义轨道节点；提供时优先于 images 自动生成的 img */
+  items?: ReactNode[]
   altPrefix?: string
   shape?: OrbitShape
   customPath?: string
@@ -182,6 +184,7 @@ function OrbitItem({
 
 export function OrbitImages({
   images = [],
+  items: customItems,
   altPrefix = 'Orbiting image',
   shape = 'ellipse',
   customPath,
@@ -262,8 +265,25 @@ export function OrbitImages({
 
   const progress = useMotionValue(0)
 
+  const orbitItems = useMemo(
+    () =>
+      customItems ??
+      images.map((src, index) => (
+        <img
+          key={`${src}-${index}`}
+          src={src}
+          alt={`${altPrefix} ${index + 1}`}
+          draggable={false}
+          className={itemClassName}
+        />
+      )),
+    [customItems, images, altPrefix, itemClassName],
+  )
+
+  const orbitItemCount = customItems?.length ?? images.length
+
   useEffect(() => {
-    if (paused || images.length === 0) return
+    if (paused || orbitItemCount === 0) return
     const controls = animate(progress, direction === 'reverse' ? -100 : 100, {
       duration,
       ease: easing,
@@ -271,7 +291,7 @@ export function OrbitImages({
       repeatType: 'loop',
     })
     return () => controls.stop()
-  }, [progress, duration, easing, direction, paused, images.length])
+  }, [progress, duration, easing, direction, paused, orbitItemCount])
 
   const containerWidth = responsive ? '100%' : typeof width === 'number' ? width : '100%'
   const containerHeight = responsive
@@ -282,17 +302,7 @@ export function OrbitImages({
         ? width
         : 'auto'
 
-  const items = images.map((src, index) => (
-    <img
-      key={`${src}-${index}`}
-      src={src}
-      alt={`${altPrefix} ${index + 1}`}
-      draggable={false}
-      className={itemClassName}
-    />
-  ))
-
-  if (images.length === 0) return null
+  if (orbitItemCount === 0) return null
 
   return (
     <div
@@ -339,12 +349,12 @@ export function OrbitImages({
             </svg>
           )}
 
-          {items.map((item, index) => (
+          {orbitItems.map((item, index) => (
             <OrbitItem
               key={index}
               item={item}
               index={index}
-              totalItems={items.length}
+              totalItems={orbitItems.length}
               path={path}
               itemSize={itemSize}
               rotation={rotation}

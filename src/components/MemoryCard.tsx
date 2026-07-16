@@ -21,7 +21,7 @@ export function MemoryCard({ memory, canEdit, onEdit, onDelete }: MemoryCardProp
   return (
     <>
       <SpotlightCard
-        className="group relative rounded-xl border border-white/[0.06] bg-[#141414] transition hover:border-white/10"
+        className="group relative rounded-xl border glass-panel transition hover:border-white/15"
         spotlightColor="rgba(255,255,255,0.04)"
       >
         <motion.article layout className="p-5">

@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import { deleteMediaByKey, generateId, getDb, saveUploadedFile } from '../db.js'
-import { requireAuth, requireEditor } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
@@ -14,6 +14,7 @@ type MemoryRow = {
   date: string
   created_at: string
   unlock_at: string | null
+  owner: string | null
 }
 
 function todayDate(): string {
@@ -34,52 +35,6 @@ function normalizeUnlockAt(value: unknown, fallback: string | null): string | nu
   return trimmed
 }
 
-function getMemoryJson(memoryId: string) {
-  const m = getDb().prepare('SELECT * FROM memories WHERE id = ?').get(memoryId) as MemoryRow | undefined
-  if (!m) return null
-
-  const locked = isLocked(m.unlock_at)
-  if (locked) {
-    return {
-      id: m.id,
-      stageId: m.stage_id,
-      title: m.title,
-      content: '',
-      date: m.date,
-      createdAt: m.created_at,
-      unlockAt: m.unlock_at,
-      locked: true,
-      media: [] as Array<{ id: string; type: string; name: string; blobKey: string }>,
-    }
-  }
-
-  const media = (
-    getDb()
-      .prepare(
-        'SELECT id, type, name, blob_key FROM memory_media WHERE memory_id = ? ORDER BY sort_order ASC',
-      )
-      .all(m.id) as Array<{ id: string; type: string; name: string; blob_key: string }>
-  ).map((item) => ({
-    id: item.id,
-    type: item.type,
-    name: item.name,
-    blobKey: item.blob_key,
-  }))
-
-  return {
-    id: m.id,
-    stageId: m.stage_id,
-    title: m.title,
-    content: m.content,
-    date: m.date,
-    createdAt: m.created_at,
-    unlockAt: m.unlock_at,
-    locked: false,
-    media,
-  }
-}
-
-/** editor 编辑时需要看到真实内容 */
 function getMemoryJsonFull(memoryId: string) {
   const m = getDb().prepare('SELECT * FROM memories WHERE id = ?').get(memoryId) as MemoryRow | undefined
   if (!m) return null
@@ -110,20 +65,32 @@ function getMemoryJsonFull(memoryId: string) {
   }
 }
 
-router.get('/', requireAuth, (req, res) => {
-  const memories = getDb()
-    .prepare('SELECT id FROM memories ORDER BY created_at DESC')
-    .all() as Array<{ id: string }>
+/** 本人查看自己的回忆：时间胶囊未到期时仍可见内容（便于预览） */
+function getMemoryJsonForOwner(memoryId: string) {
+  return getMemoryJsonFull(memoryId)
+}
 
-  const full = req.user?.role === 'editor'
+function getOwnedMemory(id: string, username: string): MemoryRow | undefined {
+  return getDb()
+    .prepare('SELECT * FROM memories WHERE id = ? AND owner = ?')
+    .get(id, username) as MemoryRow | undefined
+}
+
+router.get('/', requireAuth, (req, res) => {
+  const username = req.user!.username
+  const memories = getDb()
+    .prepare('SELECT id FROM memories WHERE owner = ? ORDER BY created_at DESC')
+    .all(username) as Array<{ id: string }>
+
   res.json(
     memories
-      .map((m) => (full ? getMemoryJsonFull(m.id) : getMemoryJson(m.id)))
+      .map((m) => getMemoryJsonForOwner(m.id))
       .filter(Boolean),
   )
 })
 
-router.post('/', requireEditor, upload.array('files'), (req, res) => {
+router.post('/', requireAuth, upload.array('files'), (req, res) => {
+  const username = req.user!.username
   const { stageId, title, content, date } = req.body as {
     stageId?: string
     title?: string
@@ -142,10 +109,10 @@ router.post('/', requireEditor, upload.array('files'), (req, res) => {
 
   getDb()
     .prepare(
-      `INSERT INTO memories (id, stage_id, title, content, date, created_at, unlock_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO memories (id, stage_id, title, content, date, created_at, unlock_at, owner)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(memoryId, stageId, title.trim(), content ?? '', date, createdAt, unlockAt)
+    .run(memoryId, stageId, title.trim(), content ?? '', date, createdAt, unlockAt, username)
 
   const files = (req.files as Express.Multer.File[] | undefined) ?? []
   files.forEach((file, index) => {
@@ -153,7 +120,7 @@ router.post('/', requireEditor, upload.array('files'), (req, res) => {
     const mediaId = generateId()
     const type = file.mimetype.startsWith('video/') ? 'video' : 'image'
 
-    saveUploadedFile(blobKey, file.originalname, file.mimetype, file.buffer, 'memory')
+    saveUploadedFile(blobKey, file.originalname, file.mimetype, file.buffer, 'memory', username)
 
     getDb()
       .prepare(
@@ -163,14 +130,13 @@ router.post('/', requireEditor, upload.array('files'), (req, res) => {
       .run(mediaId, memoryId, type, file.originalname, blobKey, index)
   })
 
-  res.status(201).json(getMemoryJsonFull(memoryId))
+  res.status(201).json(getMemoryJsonForOwner(memoryId))
 })
 
-router.patch('/:id', requireEditor, upload.array('files'), (req, res) => {
+router.patch('/:id', requireAuth, upload.array('files'), (req, res) => {
+  const username = req.user!.username
   const id = String(req.params.id)
-  const existing = getDb().prepare('SELECT * FROM memories WHERE id = ?').get(id) as
-    | MemoryRow
-    | undefined
+  const existing = getOwnedMemory(id, username)
 
   if (!existing) {
     res.status(404).json({ error: '回忆不存在' })
@@ -225,7 +191,7 @@ router.patch('/:id', requireEditor, upload.array('files'), (req, res) => {
     const mediaId = generateId()
     const type = file.mimetype.startsWith('video/') ? 'video' : 'image'
 
-    saveUploadedFile(blobKey, file.originalname, file.mimetype, file.buffer, 'memory')
+    saveUploadedFile(blobKey, file.originalname, file.mimetype, file.buffer, 'memory', username)
 
     getDb()
       .prepare(
@@ -235,14 +201,13 @@ router.patch('/:id', requireEditor, upload.array('files'), (req, res) => {
       .run(mediaId, id, type, file.originalname, blobKey, maxSort.m + 1 + index)
   })
 
-  res.json(getMemoryJsonFull(id))
+  res.json(getMemoryJsonForOwner(id))
 })
 
-router.delete('/:id', requireEditor, (req, res) => {
+router.delete('/:id', requireAuth, (req, res) => {
+  const username = req.user!.username
   const id = String(req.params.id)
-  const memory = getDb()
-    .prepare('SELECT id FROM memories WHERE id = ?')
-    .get(id) as { id: string } | undefined
+  const memory = getOwnedMemory(id, username)
 
   if (!memory) {
     res.status(404).json({ error: '回忆不存在' })

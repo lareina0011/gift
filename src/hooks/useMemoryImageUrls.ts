@@ -8,6 +8,7 @@ export interface MemoryImageEntry {
   memoryId: string
   mediaId: string
   title: string
+  content: string
 }
 
 const MAX_ORBIT_IMAGES = 24
@@ -22,6 +23,7 @@ export function useMemoryImageUrls(memories: Memory[]) {
 
     const load = async () => {
       const entries = memories
+        .filter((memory) => !memory.locked)
         .flatMap((memory) =>
           memory.media
             .filter((item) => item.type === 'image')
@@ -30,6 +32,7 @@ export function useMemoryImageUrls(memories: Memory[]) {
               memoryId: memory.id,
               mediaId: item.id,
               title: memory.title,
+              content: memory.content,
               date: memory.date,
             })),
         )
@@ -50,6 +53,7 @@ export function useMemoryImageUrls(memories: Memory[]) {
           memoryId: entry.memoryId,
           mediaId: entry.mediaId,
           title: entry.title,
+          content: entry.content,
         })
       }
 
@@ -68,8 +72,14 @@ export function useMemoryImageUrls(memories: Memory[]) {
     }
   }, [memories])
 
-  return { images, ready, totalImageCount: memories.reduce(
-    (count, memory) => count + memory.media.filter((item) => item.type === 'image').length,
-    0,
-  ) }
+  return {
+    images,
+    ready,
+    totalImageCount: memories
+      .filter((memory) => !memory.locked)
+      .reduce(
+        (count, memory) => count + memory.media.filter((item) => item.type === 'image').length,
+        0,
+      ),
+  }
 }

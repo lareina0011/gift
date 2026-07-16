@@ -86,7 +86,7 @@ export function FutureSection({
     <div className="space-y-4">
       <FadeIn>
         <SpotlightCard
-          className="rounded-xl border border-white/[0.06] bg-[#141414] p-6 text-center"
+          className="rounded-xl border glass-panel p-6 text-center"
           spotlightColor="rgba(255,255,255,0.05)"
         >
           <motion.div
@@ -124,7 +124,7 @@ export function FutureSection({
         <FadeIn delay={0.1}>
           <form
             onSubmit={handleSubmit}
-            className="rounded-xl border border-white/[0.06] bg-[#141414] p-5"
+            className="rounded-xl border glass-panel p-5"
           >
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs tracking-wider text-white/40">
@@ -207,7 +207,7 @@ export function FutureSection({
           {wishes.map((wish, i) => (
             <FadeIn key={wish.id} delay={i * 0.05}>
               <SpotlightCard
-                className="group relative rounded-xl border border-white/[0.06] bg-[#141414] p-4"
+                className="group relative rounded-xl border glass-panel p-4"
                 spotlightColor="rgba(255,255,255,0.04)"
               >
                 <div className="absolute right-3 top-3 z-20 flex gap-1">

@@ -1,10 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { APP_CONFIG } from '../constants/config'
+import { getStageHeroCopy } from '../constants/stages'
+import type { StageId } from '../types'
 import { BlurText } from './reactbits'
 
 interface HeroCoverProps {
+  stageId?: StageId | null
   onExplore: () => void
   onFuture: () => void
   onOpenLetter: () => void
@@ -12,10 +15,13 @@ interface HeroCoverProps {
 }
 
 export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCover(
-  { onExplore, onFuture, onOpenLetter, onShareCard },
+  { stageId = null, onExplore, onFuture, onOpenLetter, onShareCard },
   ref,
 ) {
-  const { hero } = APP_CONFIG
+  const hero = useMemo(
+    () => (stageId ? getStageHeroCopy(stageId) : APP_CONFIG.hero),
+    [stageId],
+  )
   const [expanded, setExpanded] = useState(false)
   const [showScrollHint, setShowScrollHint] = useState(true)
 
@@ -39,6 +45,7 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
 
       <div className="relative z-10 page-shell w-full pb-24 pt-24 sm:pb-28 sm:pt-28">
         <motion.p
+          key={`label-${stageId ?? 'default'}`}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
@@ -48,6 +55,7 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
         </motion.p>
 
         <BlurText
+          key={`title-${stageId ?? 'default'}`}
           text={hero.title}
           className="font-serif text-4xl font-bold leading-tight text-white sm:text-6xl md:text-7xl"
           animateBy="words"
@@ -55,6 +63,7 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
         />
 
         <motion.p
+          key={`desc-${stageId ?? 'default'}`}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7 }}
@@ -75,7 +84,7 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
             onClick={onExplore}
             className="rounded-sm bg-white px-7 py-3.5 text-sm font-semibold tracking-[0.12em] text-black transition hover:bg-white/90"
           >
-            {hero.exploreText.toUpperCase()}
+            {APP_CONFIG.hero.exploreText.toUpperCase()}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.03, y: -1 }}
@@ -83,7 +92,7 @@ export const HeroCover = forwardRef<HTMLElement, HeroCoverProps>(function HeroCo
             onClick={onFuture}
             className="rounded-sm border border-white/30 px-7 py-3.5 text-sm font-semibold tracking-[0.12em] text-white transition hover:border-white/60 hover:bg-white/5"
           >
-            {hero.futureText.toUpperCase()}
+            {APP_CONFIG.hero.futureText.toUpperCase()}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.03, y: -1 }}

@@ -14,7 +14,6 @@ interface StageContentProps {
   stageId: StageId
   memories: Memory[]
   wishes: FutureWish[]
-  isEditor: boolean
   stageIconUrl?: string | null
   onAddMemory: (data: {
     title: string
@@ -44,7 +43,6 @@ export function StageContent({
   stageId,
   memories,
   wishes,
-  isEditor,
   stageIconUrl,
   onAddMemory,
   onEditMemory,
@@ -103,7 +101,7 @@ export function StageContent({
           >
             <FadeIn>
               <SpotlightCard
-                className="mb-6 rounded-xl border border-white/[0.06] bg-[#141414] p-6"
+                className="mb-6 rounded-xl border glass-panel p-6"
                 spotlightColor="rgba(255,255,255,0.05)"
               >
                 <div className="flex items-start gap-4">
@@ -146,17 +144,15 @@ export function StageContent({
                       <BookOpen className="h-3.5 w-3.5" />
                       回忆记录 ({filtered.length}/{memories.length})
                     </h3>
-                    {isEditor && (
-                      <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={openCreate}
-                        className="flex items-center gap-1.5 self-start rounded-sm bg-white px-4 py-2 text-xs font-semibold tracking-wider text-black"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        添加回忆
-                      </motion.button>
-                    )}
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={openCreate}
+                      className="flex items-center gap-1.5 self-start rounded-sm bg-white px-4 py-2 text-xs font-semibold tracking-wider text-black"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      添加回忆
+                    </motion.button>
                   </div>
                 </FadeIn>
 
@@ -175,7 +171,7 @@ export function StageContent({
                       <select
                         value={year}
                         onChange={(e) => setYear(e.target.value)}
-                        className="rounded-lg border border-white/10 bg-[#141414] px-3 py-2.5 text-sm text-white/70 outline-none"
+                        className="rounded-lg border border-white/12 bg-transparent px-3 py-2.5 text-sm text-white/70 outline-none"
                       >
                         <option value="all">全部年份</option>
                         {years.map((y) => (
@@ -198,18 +194,14 @@ export function StageContent({
                       />
                       <p className="mt-3 font-medium text-white/50">还没有回忆记录</p>
                       <p className="mt-1 text-sm text-white/30">
-                        {isEditor
-                          ? `点击「添加回忆」，上传照片、视频，写下${stage.label}的故事`
-                          : '回忆会慢慢被写进这里'}
+                        点击「添加回忆」，上传照片、视频，写下{stage.label}的故事
                       </p>
-                      {isEditor && (
-                        <button
-                          onClick={openCreate}
-                          className="mt-4 text-xs tracking-wider text-white/50 transition hover:text-white/80"
-                        >
-                          开始记录 →
-                        </button>
-                      )}
+                      <button
+                        onClick={openCreate}
+                        className="mt-4 text-xs tracking-wider text-white/50 transition hover:text-white/80"
+                      >
+                        开始记录 →
+                      </button>
                     </div>
                   </FadeIn>
                 ) : filtered.length === 0 ? (
@@ -221,7 +213,7 @@ export function StageContent({
                         <FadeIn key={memory.id} delay={i * 0.05}>
                           <MemoryCard
                             memory={memory}
-                            canEdit={isEditor}
+                            canEdit
                             onEdit={openEdit}
                             onDelete={onDeleteMemory}
                           />
@@ -236,30 +228,28 @@ export function StageContent({
         </AnimatePresence>
       </div>
 
-      {isEditor && (
-        <AddMemoryModal
-          open={modalOpen}
-          stageLabel={stage.label}
-          initialMemory={editingMemory}
-          onClose={() => {
-            setModalOpen(false)
-            setEditingMemory(null)
-          }}
-          onSubmit={async (data) => {
-            if (editingMemory) {
-              await onEditMemory(editingMemory.id, data)
-            } else {
-              await onAddMemory({
-                title: data.title,
-                content: data.content,
-                date: data.date,
-                files: data.files,
-                unlockAt: data.unlockAt,
-              })
-            }
-          }}
-        />
-      )}
+      <AddMemoryModal
+        open={modalOpen}
+        stageLabel={stage.label}
+        initialMemory={editingMemory}
+        onClose={() => {
+          setModalOpen(false)
+          setEditingMemory(null)
+        }}
+        onSubmit={async (data) => {
+          if (editingMemory) {
+            await onEditMemory(editingMemory.id, data)
+          } else {
+            await onAddMemory({
+              title: data.title,
+              content: data.content,
+              date: data.date,
+              files: data.files,
+              unlockAt: data.unlockAt,
+            })
+          }
+        }}
+      />
     </div>
   )
 }

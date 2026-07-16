@@ -20,6 +20,7 @@ export interface DbMemory {
   date: string
   created_at: string
   unlock_at: string | null
+  owner: string | null
 }
 
 export interface DbSiteLetter {
@@ -154,6 +155,7 @@ export function initDb(): void {
   `)
 
   migrateMemoryUnlockAt()
+  migrateMemoryOwner()
   seedLetter()
   seedUsers()
 }
@@ -162,6 +164,24 @@ function migrateMemoryUnlockAt(): void {
   const cols = db.prepare(`PRAGMA table_info(memories)`).all() as Array<{ name: string }>
   if (!cols.some((c) => c.name === 'unlock_at')) {
     db.exec(`ALTER TABLE memories ADD COLUMN unlock_at TEXT`)
+  }
+}
+
+/** 回忆按账号隔离：历史数据默认归 lareina，避免影响 viewer 空状态 */
+function migrateMemoryOwner(): void {
+  const cols = db.prepare(`PRAGMA table_info(memories)`).all() as Array<{ name: string }>
+  if (!cols.some((c) => c.name === 'owner')) {
+    db.exec(`ALTER TABLE memories ADD COLUMN owner TEXT`)
+    db.exec(`UPDATE memories SET owner = 'lareina' WHERE owner IS NULL`)
+    db.exec(`
+      UPDATE media_files
+      SET owner = (
+        SELECT m.owner FROM memories m
+        INNER JOIN memory_media mm ON mm.memory_id = m.id
+        WHERE mm.blob_key = media_files.blob_key
+      )
+      WHERE category = 'memory' AND owner IS NULL
+    `)
   }
 }
 
